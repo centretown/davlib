@@ -1,76 +1,155 @@
+
 #include "gpads.h"
-#include "string.h"
 
-Pad gamepads[4] = {0};
-const int max_game_pads = sizeof(gamepads) / sizeof(gamepads[0]);
-const char *undefined = "undefined";
+#include <assert.h>
+#include <raylib.h>
+// #include <stdio.h>
+#include <string.h>
 
-const char *button_names[] = {
+Pad GamePads[4] = {0};
+const size_t maxGamePads = sizeof(GamePads) / sizeof(GamePads[0]);
+
+const char *noneDefined = "undefined";
+const PadButtonResult padButtonResultNone = {
+    .pad = -1,
+    .button = -1,
+    .command = -1,
+};
+const PadAxisResult padAxisResultNone = {
+    .pad = -1,
+    .axis = -1,
+    .command = -1,
+    .value = 0.0f,
+};
+
+const char *buttonNames[] = {
     "unknown",         "left face up",   "left face right",  "left face down",
     "left face left",  "right face up",  "right face right", "right face down",
     "right face left", "left trigger 1", "left trigger 2",   "right trigger 1",
     "right trigger 2", "middle left",    "middle",           "middle right",
     "left thumb",      "right thumb",
 };
-size_t max_buttons = sizeof(button_names) / sizeof(button_names[0]);
+const size_t maxButtons = sizeof(buttonNames) / sizeof(buttonNames[0]);
 inline const char *ButtonName(int button) {
-  if (button < 0 || button >= max_buttons)
-    return undefined;
-  return button_names[button];
+  if (button < 0 || button >= maxButtons)
+    return noneDefined;
+  return buttonNames[button];
 }
 
-const char *axis_names[] = {
+const char *axisNames[] = {
     "left x", "left y", "right x", "right y", "left trigger", "right trigger",
 };
-size_t max_axes = sizeof(axis_names) / sizeof(axis_names[0]);
+size_t maxAxes = sizeof(axisNames) / sizeof(axisNames[0]);
 
 inline const char *AxisName(int axis) {
-  if (axis < 0 || axis >= max_axes)
-    return undefined;
-  return axis_names[axis];
+  if (axis < 0 || axis >= maxAxes)
+    return noneDefined;
+  return axisNames[axis];
 }
 
-Cmd CheckGamePad(int pad) {
-  if (pad < 0 || pad >= max_game_pads) {
-    return CMD_UNDEFINED;
-  }
-  if (!IsGamepadAvailable(pad)) {
-    return CMD_UNDEFINED;
-  }
-
-  Pad *gamepad = &gamepads[pad];
-  if (!gamepad->found) {
-    gamepad->found = true;
-    gamepad->axisCount = GetGamepadAxisCount(pad);
-    const char *name = GetGamepadName(pad);
-    strncpy(gamepad->name, name, sizeof(gamepad->name) - 1);
-    printf("%s gamepad:%d axisCount:%d\n", gamepad->name, pad,
-           gamepad->axisCount);
-  }
-
-  if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_LEFT))
-    return CMD_MOVE_LEFT;
-  if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_RIGHT))
-    return CMD_MOVE_RIGHT;
-  if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_UP))
-    return CMD_MOVE_UP;
-  if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_DOWN))
-    return CMD_MOVE_DOWN;
-  if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_TRIGGER_1))
-    return CMD_MOVE_IN;
-  if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_RIGHT_TRIGGER_1))
-    return CMD_MOVE_OUT;
-  if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_MIDDLE_RIGHT))
-    return CMD_MOVE_HOME;
-  return CMD_UNDEFINED;
+void RegisterGamePad(int pad) {
+  Pad *gamepad = &GamePads[pad];
+  gamepad->registered = true;
+  gamepad->axisCount = GetGamepadAxisCount(pad);
+  const char *name = GetGamepadName(pad);
+  strncpy(gamepad->name, name, sizeof(gamepad->name) - 1);
 }
 
-Cmd CheckGamePads() {
-  for (int i = 0; i < max_game_pads; i++) {
-    Cmd cmd = CheckGamePad(i);
-    if (cmd != CMD_UNDEFINED) {
-      return cmd;
+inline bool IsGamePadValid(int pad) {
+  if (pad < 0 || pad >= maxGamePads || !IsGamepadAvailable(pad)) {
+    return false;
+  }
+  if (!GamePads[pad].registered) {
+    RegisterGamePad(pad);
+  }
+  return true;
+}
+
+PadAxisResult CheckGamePadAxis(int pad, int axis, int command) {
+  if (!IsGamePadValid(pad)) {
+    return padAxisResultNone;
+  }
+  float current = GamePads[pad].axisValues[axis];
+  float value = GetGamepadAxisMovement(pad, axis);
+  if (value == current) {
+    return padAxisResultNone;
+  }
+
+  GamePads[pad].axisValues[axis] = value;
+  return (PadAxisResult){
+      .pad = pad,
+      .axis = axis,
+      .command = command,
+      .value = value,
+  };
+}
+
+PadAxisResult CheckGamePadAxes(int count, const int *list) {
+  assert(count > 0);
+  for (int pad = 0; pad < maxGamePads; pad++) {
+    if (!IsGamePadValid(pad)) {
+      continue;
+    }
+
+    for (int command = 0; command < count; command++) {
+      PadAxisResult result = CheckGamePadAxis(pad, list[command], command);
+      if (result.command >= 0) {
+        // printf("pad=%d axis=%d command=%d value=%f\n", result.pad, result.axis,
+        //        result.command, result.value);
+        return result;
+      }
     }
   }
-  return CMD_UNDEFINED;
+  return padAxisResultNone;
 }
+
+inline PadButtonResult CheckGamePadButton(int pad, int button, int index) {
+  if (IsGamepadButtonDown(pad, button)) {
+    return (PadButtonResult){
+        .pad = pad,
+        .button = button,
+        .command = index,
+    };
+  }
+  return padButtonResultNone;
+}
+
+PadButtonResult CheckAllGamePadButtons(int count, const int *list) {
+  assert(list);
+  assert(count > 0);
+  for (int pad = 0; pad < maxGamePads; pad++) {
+    if (!IsGamePadValid(pad))
+      continue;
+
+    for (int index = 0; index < count; index++) {
+      int button = list[index];
+      PadButtonResult result = CheckGamePadButton(pad, button, index);
+      if (result.command >= 0) {
+        return result;
+      }
+    }
+  }
+  return padButtonResultNone;
+}
+
+// PadButtonResult CheckAllGamePadButtons(int count, ...) {
+//   assert(count > 0);
+//   va_list valist;
+//   va_start(valist, count);
+
+//   for (int pad = 0; pad < maxGamePads; pad++) {
+//     if (!IsGamePadValid(pad))
+//       continue;
+
+//     for (int index = 0; index < count; index++) {
+//       int button = va_arg(valist, int);
+//       PadButtonResult result = CheckGamePadButton(pad, button, index);
+//       if (result.command >= 0) {
+//         va_end(valist);
+//         return result;
+//       }
+//     }
+//   }
+//   va_end(valist);
+//   return padButtonResultNone;
+// }

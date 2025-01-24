@@ -1,20 +1,30 @@
 #ifndef GPADS_COOL_DEFINED
 #define GPADS_COOL_DEFINED
 
-#include <stdio.h>
-#include "raylib.h"
-#include "cmd.h"
+#include <stdbool.h>
 
-typedef struct
-{
-    bool found;
-    int axisCount;
-    int lastPressed;
-    char name[80];
-    CmdQueue cmds;
-    int Qsize;
+typedef struct {
+  bool registered;
+  int axisCount;
+  float axisValues[6];
+  int lastPressed;
+  char name[80];
 } Pad;
 
-Cmd CheckGamePads(); // detect gamepads
+typedef struct {
+  int pad;
+  int button;
+  int command;
+} PadButtonResult;
 
+PadButtonResult CheckAllGamePadButtons(int count, const int *list);
+
+typedef struct {
+  int pad;
+  int axis;
+  int command;
+  float value;
+} PadAxisResult;
+
+PadAxisResult CheckGamePadAxes(int count, const int *list);
 #endif // GPADS_COOL_DEFINED

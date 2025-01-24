@@ -2,8 +2,7 @@
 #define KBD_COOL_DEFINED
 
 #include "raylib.h"
-#include "cmd.h"
 
-Cmd checkKeyboard(); // detect gamepads
+int CheckKeyboard(int count, const int *list);
 
 #endif // KBD_COOL_DEFINED
