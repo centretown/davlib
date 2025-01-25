@@ -1,5 +1,7 @@
 #include "vec.h"
 
+#include <raylib.h>
+#include <stdbool.h>
 #include <string.h>
 
 Pad GamePads[4] = {0};
@@ -14,7 +16,7 @@ const char *buttonNames[] = {
     "left thumb",      "right thumb",
 };
 const size_t maxButtons = sizeof(buttonNames) / sizeof(buttonNames[0]);
-inline const char *ButtonName(int button) {
+const char *ButtonName(int button) {
   if (button < 0 || button >= maxButtons)
     return noneDefined;
   return buttonNames[button];
@@ -25,7 +27,7 @@ const char *axisNames[] = {
 };
 size_t maxAxes = sizeof(axisNames) / sizeof(axisNames[0]);
 
-inline const char *AxisName(int axis) {
+const char *AxisName(int axis) {
   if (axis < 0 || axis >= maxAxes)
     return noneDefined;
   return axisNames[axis];
@@ -54,8 +56,8 @@ inline bool IsGamePadValid(int pad) {
 // size_t navigationKeysSize = sizeof(navigationKeys) /
 // sizeof(navigationKeys[0]);
 
-Vector3 KeysToVector(Vector3 vec, float scale) {
-  float delta = scale * 0.1f;
+Vector3 KeysToVector(Vector3 vec, Vector3 base, float scale) {
+  float delta = scale;
   if (IsKeyDown(KEY_LEFT)) {
     vec.x -= delta;
     return vec;
@@ -81,16 +83,28 @@ Vector3 KeysToVector(Vector3 vec, float scale) {
     return vec;
   }
   if (IsKeyDown(KEY_HOME)) {
-    vec.x = 0;
-    vec.y = 0;
-    vec.z = 0;
+    vec.x = base.x;
+    vec.y = base.y;
+    vec.z = base.z;
     return vec;
   }
   return vec;
 }
 
-Vector3 ButtonsToVector(Vector3 vec, float scale) {
-  float delta = scale * 0.1f;
+bool CheckButton(int button) {
+  for (int pad = 0; pad < maxGamePads; pad++) {
+    if (!IsGamePadValid(pad)) {
+      continue;
+    }
+    if (IsGamepadButtonDown(pad, button)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+Vector3 ButtonsToVector(Vector3 vec, Vector3 base, float scale) {
+  float delta = scale;
   for (int pad = 0; pad < maxGamePads; pad++) {
     if (!IsGamePadValid(pad)) {
       continue;
@@ -120,9 +134,9 @@ Vector3 ButtonsToVector(Vector3 vec, float scale) {
       return vec;
     }
     if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_RIGHT_FACE_LEFT)) {
-      vec.x = 0;
-      vec.y = 0;
-      vec.z = 0;
+      vec.x = base.x;
+      vec.y = base.y;
+      vec.z = base.z;
       return vec;
     }
   }
@@ -132,7 +146,7 @@ Vector3 ButtonsToVector(Vector3 vec, float scale) {
 static int axes[] = {GAMEPAD_AXIS_RIGHT_X, GAMEPAD_AXIS_RIGHT_Y,
                      GAMEPAD_AXIS_LEFT_Y};
 
-Vector3 AxesToVector(Vector3 vec, float scale) {
+Vector3 AxesToVector(Vector3 vec, Vector3 base, float scale) {
   enum { AXIS_X, AXIS_Z, AXIS_Y };
   for (int pad = 0; pad < maxGamePads; pad++) {
     if (!IsGamePadValid(pad)) {
@@ -146,13 +160,13 @@ Vector3 AxesToVector(Vector3 vec, float scale) {
         GamePads[pad].axisValues[axis] = value;
         switch (i) {
         case AXIS_X:
-          vec.x = value * scale;
+          vec.x = value * scale + base.x;
           return vec;
         case AXIS_Z:
-          vec.z = value * scale;
+          vec.z = value * scale + base.z;
           return vec;
         case AXIS_Y:
-          vec.y = value * scale;
+          vec.y = value * scale + base.y;
           return vec;
         }
       }
