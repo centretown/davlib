@@ -36,33 +36,44 @@ void DrawMenu(Theme *theme, Menu *menu, Position position, double now) {
     DrawText(item->label, x, y, fontSize,
              (i == menu->current) ? theme->labelActive : theme->labelColor);
     x = baseX + menu->valueColumn * fontSize;
-    DrawText(item->value, x, y, fontSize,
-             (i == menu->current) ? theme->valueActive : theme->valueColor);
+
+    if (item->choices) {
+      DrawText(item->choices[item->currentChoice], x, y, fontSize,
+               (i == menu->current) ? theme->valueActive : theme->valueColor);
+    } else {
+      DrawText(TextFormat("%d", item->currentChoice), x, y, fontSize,
+               (i == menu->current) ? theme->valueActive : theme->valueColor);
+    }
     y += fontSize;
   }
   int cmd = InputNav(now);
+  MenuItem *item = &menu->items[menu->current];
+  assert(item);
+
   if (CMD_NONE != cmd) {
     switch (cmd) {
     case NAV_LEFT:
-      break;
     case NAV_RIGHT:
+      item->currentChoice += (cmd == NAV_RIGHT) ? 1 : -1;
+      item->currentChoice = ClampInt(item->currentChoice, 0, item->choiceCount);
+      if (item->onChoose) {
+        item->onChoose(menu, menu->current, item->currentChoice);
+      }
       break;
     case NAV_UP:
-      menu->current--;
-      break;
     case NAV_DOWN:
-      menu->current++;
+      menu->current += (cmd == NAV_DOWN) ? 1 : -1;
+      menu->current = ClampInt(menu->current, 0, menu->itemCount);
       break;
     case NAV_SELECT:
       break;
     case NAV_ESCAPE:
       break;
     }
-    menu->current = ClampInt(menu->current, 0, menu->itemCount);
   }
 }
 
-int InputGamepad(double now, int count, const int *buttons) {
+int InputGamepad(int count, const int *buttons, double now) {
   assert(buttons);
   assert(count >= 0);
   for (int i = 0; i < count; i++) {
@@ -78,7 +89,7 @@ int InputGamepad(double now, int count, const int *buttons) {
 }
 
 int InputGamepadNav(double now) {
-  return InputGamepad(now, navButtonsSize, navButtons);
+  return InputGamepad(navButtonsSize, navButtons, now);
 }
 
 int InputKeys(int count, const int *keys, double now) {

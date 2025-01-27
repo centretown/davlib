@@ -20,10 +20,10 @@ typedef struct Theme {
 
 typedef struct MenuItem {
   const char *label;
-  char *value;
-  struct MenuItem *items;
-  int current;
-  int itemCount;
+  int currentChoice;
+  int choiceCount;
+  char **choices;
+  void (*onChoose)(void *, int, int);
 } MenuItem;
 
 typedef struct Menu {
@@ -33,6 +33,7 @@ typedef struct Menu {
   int current;
   int itemCount;
   MenuItem *items;
+  void *data;
 } Menu;
 
 void DrawMenu(Theme *theme, Menu *menu, Position position, double now);
@@ -47,7 +48,7 @@ typedef enum NavCmd {
   NAV_ESCAPE,
 } NavCmd;
 
-int InputGamepad(double now, int count, const int *buttons);
+int InputGamepad(int count, const int *buttons, double now);
 int InputNav(double now);
 int InputGamepadNav(double now);
 int ClampInt(int current, int min, int max);
