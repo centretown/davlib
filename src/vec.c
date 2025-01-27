@@ -1,5 +1,6 @@
 #include "vec.h"
 
+#include <assert.h>
 #include <raylib.h>
 #include <stdbool.h>
 #include <string.h>

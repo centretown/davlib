@@ -1,7 +1,8 @@
-#ifndef VEC_COOL_DEFINED
-#define VEC_COOL_DEFINED
+#ifndef DAVLIB_VEC_H_DEFINED
+#define DAVLIB_VEC_H_DEFINED
 #include <raylib.h>
-typedef struct {
+
+typedef struct Pad {
   bool registered;
   int axisCount;
   float axisValues[6];
@@ -16,4 +17,5 @@ bool CheckButton(int button);
 const char *AxisName(int axis);
 const char *ButtonName(int button);
 extern Pad GamePads[];
-#endif // VEC_COOL_DEFINED
+
+#endif // DAVLIB_VEC_H_DEFINED
