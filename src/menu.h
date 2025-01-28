@@ -52,8 +52,10 @@ typedef enum NavCmd {
 int InputGamepad(int count, const int *buttons, double now);
 int InputNav(double now);
 int InputGamepadNav(double now);
-int ClampInt(int current, int min, int max);
 int InputKeyNav(double now);
 int InputKeys(int count, const int *keys, double now);
+
+#define CLAMPNUM(currentv, minv, maxv)                                         \
+  ((currentv >= maxv) ? minv : (currentv < minv) ? maxv - 1 : currentv)
 
 #endif // DAVLIB_MENU_H_DEFINED

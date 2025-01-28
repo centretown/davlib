@@ -68,19 +68,19 @@ Vector3 KeysToVector(Vector3 vec, Vector3 base, float scale) {
     return vec;
   }
   if (IsKeyDown(KEY_UP)) {
-    vec.z += delta;
+    vec.y -= delta;
     return vec;
   }
   if (IsKeyDown(KEY_DOWN)) {
-    vec.z -= delta;
-    return vec;
-  }
-  if (IsKeyDown(KEY_PAGE_UP)) {
     vec.y += delta;
     return vec;
   }
+  if (IsKeyDown(KEY_PAGE_UP)) {
+    vec.z += delta;
+    return vec;
+  }
   if (IsKeyDown(KEY_PAGE_DOWN)) {
-    vec.y -= delta;
+    vec.z -= delta;
     return vec;
   }
   if (IsKeyDown(KEY_HOME)) {
@@ -104,6 +104,15 @@ bool CheckButton(int button) {
   return false;
 }
 
+Rectangle ButtonsToRectangle(Rectangle rec, Rectangle recbase, float scale) {
+  Vector3 vec = (Vector3){.x = rec.x, .y = 0.0f, .z = rec.y};
+  Vector3 base = (Vector3){.x = recbase.x, .y = 0.0f, .z = recbase.y};
+  vec = ButtonsToVector(vec, base, scale);
+  rec.x = vec.x;
+  rec.y = vec.z;
+  return rec;
+}
+
 Vector3 ButtonsToVector(Vector3 vec, Vector3 base, float scale) {
   float delta = scale;
   for (int pad = 0; pad < maxGamePads; pad++) {
@@ -111,27 +120,27 @@ Vector3 ButtonsToVector(Vector3 vec, Vector3 base, float scale) {
       continue;
     }
     if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_LEFT)) {
-      vec.z += delta;
-      return vec;
-    }
-    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) {
-      vec.z -= delta;
-      return vec;
-    }
-    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_UP)) {
       vec.x -= delta;
       return vec;
     }
-    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_DOWN)) {
+    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) {
       vec.x += delta;
       return vec;
     }
-    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_TRIGGER_1)) {
+    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_UP)) {
+      vec.y -= delta;
+      return vec;
+    }
+    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_DOWN)) {
       vec.y += delta;
       return vec;
     }
+    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_TRIGGER_1)) {
+      vec.z -= delta;
+      return vec;
+    }
     if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_RIGHT_TRIGGER_1)) {
-      vec.y -= delta;
+      vec.z += delta;
       return vec;
     }
     if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_RIGHT_FACE_LEFT)) {

@@ -2,7 +2,7 @@
 #include "vec.h"
 #include <assert.h>
 #include <raylib.h>
-
+#include <sys/param.h>
 static double nextUpdate = 0.0f;
 static double nextInterval = 0.5f;
 
@@ -56,7 +56,7 @@ void DrawMenu(Menu *menu, Position position, double now) {
     case NAV_LEFT:
     case NAV_RIGHT:
       item->currentChoice += (cmd == NAV_RIGHT) ? 1 : -1;
-      item->currentChoice = ClampInt(item->currentChoice, 0, item->choiceCount);
+      item->currentChoice = CLAMPNUM(item->currentChoice, 0, item->choiceCount);
       if (item->onChoose) {
         item->onChoose(menu, menu->current, item->currentChoice);
       }
@@ -64,7 +64,7 @@ void DrawMenu(Menu *menu, Position position, double now) {
     case NAV_UP:
     case NAV_DOWN:
       menu->current += (cmd == NAV_DOWN) ? 1 : -1;
-      menu->current = ClampInt(menu->current, 0, menu->itemCount);
+      menu->current = CLAMPNUM(menu->current, 0, menu->itemCount);
       break;
     case NAV_SELECT:
       break;
@@ -102,7 +102,6 @@ int InputKeys(int count, const int *keys, double now) {
       return i;
     }
   }
-
   return CMD_NONE;
 }
 
@@ -115,14 +114,4 @@ int InputNav(double now) {
   }
 
   return cmd;
-}
-
-int ClampInt(int current, int min, int max) {
-  if (current >= max) {
-    return min;
-  }
-  if (current < min) {
-    return max - 1;
-  }
-  return current;
 }

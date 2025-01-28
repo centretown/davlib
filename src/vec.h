@@ -12,6 +12,7 @@ typedef struct Pad {
 
 Vector3 KeysToVector(Vector3 vec, Vector3 base, float scale);
 Vector3 ButtonsToVector(Vector3 vec, Vector3 base, float scale);
+Rectangle ButtonsToRectangle(Rectangle rec, Rectangle recbase, float scale);
 Vector3 AxesToVector(Vector3 vec, Vector3 base, float scale);
 bool CheckButton(int button);
 const char *AxisName(int axis);
