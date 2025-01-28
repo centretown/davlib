@@ -32,11 +32,12 @@ typedef struct Menu {
   const char *title;
   int current;
   int itemCount;
-  MenuItem *items;
-  void *data;
+  MenuItem **items;
+  Theme *theme;
+  void *data; // passed to onChoose in MenuItem
 } Menu;
 
-void DrawMenu(Theme *theme, Menu *menu, Position position, double now);
+void DrawMenu(Menu *menu, Position position, double now);
 #define CMD_NONE -1
 typedef enum NavCmd {
   NAV_NONE = CMD_NONE,

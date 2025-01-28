@@ -111,19 +111,19 @@ Vector3 ButtonsToVector(Vector3 vec, Vector3 base, float scale) {
       continue;
     }
     if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_LEFT)) {
-      vec.x += delta;
+      vec.z += delta;
       return vec;
     }
     if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) {
-      vec.x -= delta;
-      return vec;
-    }
-    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_UP)) {
       vec.z -= delta;
       return vec;
     }
+    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_UP)) {
+      vec.x -= delta;
+      return vec;
+    }
     if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_DOWN)) {
-      vec.z += delta;
+      vec.x += delta;
       return vec;
     }
     if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_TRIGGER_1)) {

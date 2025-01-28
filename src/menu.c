@@ -18,11 +18,12 @@ const static int navKeys[] = {
 };
 const static int navKeysCount = sizeof(navKeys) / sizeof(navKeys[0]);
 
-void DrawMenu(Theme *theme, Menu *menu, Position position, double now) {
-  assert(theme);
+void DrawMenu(Menu *menu, Position position, double now) {
   assert(menu);
   assert(menu->items);
   assert(menu->itemCount >= 0);
+  Theme *theme = menu->theme;
+  assert(theme);
 
   int fontSize = theme->fontSize;
   int baseX = menu->position.x * fontSize + position.x * fontSize;
@@ -31,7 +32,7 @@ void DrawMenu(Theme *theme, Menu *menu, Position position, double now) {
 
   int y = baseY + fontSize + fontSize / 3;
   for (int i = 0; i < menu->itemCount; i++) {
-    MenuItem *item = &menu->items[i];
+    MenuItem *item = menu->items[i];
     int x = baseX + 2 * fontSize;
     DrawText(item->label, x, y, fontSize,
              (i == menu->current) ? theme->labelActive : theme->labelColor);
@@ -47,7 +48,7 @@ void DrawMenu(Theme *theme, Menu *menu, Position position, double now) {
     y += fontSize;
   }
   int cmd = InputNav(now);
-  MenuItem *item = &menu->items[menu->current];
+  MenuItem *item = menu->items[menu->current];
   assert(item);
 
   if (CMD_NONE != cmd) {
