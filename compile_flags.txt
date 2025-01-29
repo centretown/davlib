@@ -1,0 +1,2 @@
+  -I/home/dave/src/raylib/src
+  -I/home/dave/src/davlib

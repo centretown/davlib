@@ -2,9 +2,6 @@
 #define DAVLIB_H_DEFINED
 
 #include <raylib.h>
-#include <stddef.h>
-#include <string.h>
-#include <assert.h>
 
 typedef struct Pad {
   bool registered;
@@ -58,7 +55,7 @@ typedef struct Menu {
   int itemCount;
   MenuItem **items;
   Theme *theme;
-  void *data; // passed to onChoose in MenuItem
+  void *custom; // passed to onChoose in MenuItem
 } Menu;
 
 void DrawMenu(Menu *menu, Position position);
@@ -85,8 +82,14 @@ int InputKeys(int count, const int *keys, double now);
 #define VEC3_NULL ((Vector3){0})
 #define IS_VEC3_EQUAL(v, u) ((v.x == u.x) && (v.y == u.y) && (v.z == u.z))
 
+///////////////////////////////////////////////////////////////////////////
+
 #ifdef DAVLIB_IMPLEMENTATION
 #undef DAVLIB_IMPLEMENTATION
+
+#include <stddef.h>
+#include <string.h>
+#include <assert.h>
 
 Pad GamePads[4] = {0};
 const size_t maxGamePads = sizeof(GamePads) / sizeof(GamePads[0]);
