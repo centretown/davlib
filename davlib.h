@@ -2,6 +2,7 @@
 #define DAVLIB_H_DEFINED
 
 #include <raylib.h>
+#include <raymath.h>
 
 typedef struct Pad {
   bool registered;
@@ -58,8 +59,55 @@ typedef struct Menu {
   void *custom; // passed to onChoose in MenuItem
 } Menu;
 
-void DrawMenu(Menu *menu, Position position);
-void NavigateMenu(Menu *menu, double now);
+// void DrawModel(Model model, Vector3 position, float scale, Color tint);
+typedef enum ShapeTypeID {
+  CUBE,
+  SPHERE,
+  CYLINDER,
+  CAPSULE,
+} ShapeTypeID;
+
+typedef struct Shape {
+  ShapeTypeID typeID;
+  double rate;
+  Vector3 home;
+  // direction bearing
+  void *shapePtr;
+  void (*draw)(struct Shape *);
+  void (*move)(struct Shape *, Vector3 v);
+  Vector3 (*position)(struct Shape *);
+  // void (*color)(struct Shape *, Color);
+} Shape;
+
+typedef struct CubeShape {
+  Vector3 position;
+  Vector3 size;
+  Color color;
+} CubeShape;
+
+typedef struct SphereShape {
+  Vector3 position;
+  float radius;
+  Color color;
+} SphereShape;
+
+typedef struct CylinderShape {
+  Vector3 position;
+  float radiusTop;
+  float radiusBottom;
+  float height;
+  int slices;
+  Color color;
+} CylinderShape;
+
+typedef struct CapsuleShape {
+  Vector3 startPos;
+  Vector3 endPos;
+  float radius;
+  int slices;
+  int rings;
+  Color color;
+} CapsuleShape;
 
 #define CMD_NONE -1
 typedef enum NavCmd {
@@ -72,11 +120,16 @@ typedef enum NavCmd {
   NAV_ESCAPE,
 } NavCmd;
 
+void DrawShapes(int count, Shape *shapes[]);
+void InitShapes(int count, Shape *shapes[]);
+void DrawMenu(Menu *menu, Position position);
+void NavigateMenu(Menu *menu, double now);
+
 int InputGamepad(int count, const int *buttons, double now);
-int InputNav(double now);
 int InputGamepadNav(double now);
-int InputKeyNav(double now);
+int InputNav(double now);
 int InputKeys(int count, const int *keys, double now);
+int InputKeyNav(double now);
 
 #define CLAMPNUM(num, lo, hi) ((num >= hi) ? lo : (num < lo) ? hi - 1 : num)
 #define VEC3_NULL ((Vector3){0})
@@ -87,9 +140,10 @@ int InputKeys(int count, const int *keys, double now);
 #ifdef DAVLIB_IMPLEMENTATION
 #undef DAVLIB_IMPLEMENTATION
 
+#include <assert.h>
 #include <stddef.h>
 #include <string.h>
-#include <assert.h>
+#include <stdio.h>
 
 Pad GamePads[4] = {0};
 const size_t maxGamePads = sizeof(GamePads) / sizeof(GamePads[0]);
@@ -112,7 +166,7 @@ const char *ButtonName(int button) {
 const char *axisNames[] = {
     "left x", "left y", "right x", "right y", "left trigger", "right trigger",
 };
-size_t maxAxes = sizeof(axisNames) / sizeof(axisNames[0]);
+const size_t maxAxes = sizeof(axisNames) / sizeof(axisNames[0]);
 
 const char *AxisName(int axis) {
   if (axis < 0 || axis >= maxAxes)
@@ -154,11 +208,11 @@ Vector3 KeysToVector(Vector3 vec, Vector3 base, float scale) {
     return vec;
   }
   if (IsKeyDown(KEY_UP)) {
-    vec.y -= delta;
+    vec.y += delta;
     return vec;
   }
   if (IsKeyDown(KEY_DOWN)) {
-    vec.y += delta;
+    vec.y -= delta;
     return vec;
   }
   if (IsKeyDown(KEY_PAGE_UP)) {
@@ -199,27 +253,27 @@ Vector3 ButtonsToVectorPro(Vector3 vec, Vector3 base, float scale, Vector3 min,
       continue;
     }
     if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_LEFT)) {
-      vec.x -= delta;
-      break;
-    }
-    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) {
       vec.x += delta;
       break;
     }
-    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_UP)) {
-      vec.y -= delta;
+    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_RIGHT)) {
+      vec.x -= delta;
       break;
     }
-    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_DOWN)) {
+    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_UP)) {
       vec.y += delta;
       break;
     }
+    if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_FACE_DOWN)) {
+      vec.y -= delta;
+      break;
+    }
     if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_LEFT_TRIGGER_1)) {
-      vec.z -= delta;
+      vec.z += delta;
       break;
     }
     if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_RIGHT_TRIGGER_1)) {
-      vec.z += delta;
+      vec.z -= delta;
       break;
     }
     if (IsGamepadButtonDown(pad, GAMEPAD_BUTTON_RIGHT_FACE_LEFT)) {
@@ -407,6 +461,123 @@ int InputNav(double now) {
   }
 
   return cmd;
+}
+
+void DrawCubeShape(Shape *shape) {
+  CubeShape *cube = shape->shapePtr;
+  DrawCubeV(cube->position, cube->size, cube->color);
+}
+void DrawSphereShape(Shape *shape) {
+  SphereShape *sphere = shape->shapePtr;
+  DrawSphere(sphere->position, sphere->radius, sphere->color);
+}
+void DrawCylinderShape(Shape *shape) {
+  CylinderShape *cylinder = shape->shapePtr;
+  DrawCylinder(cylinder->position, cylinder->radiusTop, cylinder->radiusBottom,
+               cylinder->height, cylinder->slices, cylinder->color);
+}
+void DrawCapsuleShape(Shape *shape) {
+  CapsuleShape *capsule = shape->shapePtr;
+  DrawCapsule(capsule->startPos, capsule->endPos, capsule->radius,
+              capsule->slices, capsule->rings, capsule->color);
+}
+void MoveCubeShape(Shape *shape, Vector3 position) {
+  CubeShape *cube = shape->shapePtr;
+  cube->position = position;
+}
+Vector3 CubeShapePosition(Shape *shape) {
+  CubeShape *cube = shape->shapePtr;
+  return cube->position;
+}
+void MoveSphereShape(Shape *shape, Vector3 position) {
+  SphereShape *sphere = shape->shapePtr;
+  sphere->position = position;
+}
+Vector3 SphereShapePosition(Shape *shape) {
+  SphereShape *sphere = shape->shapePtr;
+  return sphere->position;
+}
+void MoveCylinderShape(Shape *shape, Vector3 position) {
+  CylinderShape *cylinder = shape->shapePtr;
+  cylinder->position = position;
+}
+Vector3 CylinderShapePosition(Shape *shape) {
+  CylinderShape *cylinder = shape->shapePtr;
+  return cylinder->position;
+}
+
+#include <stdarg.h>
+void print_vectors(const int count, ...) {
+  va_list args;
+  va_start(args, count);
+  for (int i = 0; i < count; i++) {
+    Vector3 v = va_arg(args, Vector3);
+    printf("%d: {%.2f, %.2f, %.2f}\n", i + 1, v.x, v.y, v.z);
+  }
+  va_end(args);
+  printf("\n");
+}
+
+void MoveCapsuleShape(Shape *shape, Vector3 position) {
+  CapsuleShape *capsule = shape->shapePtr;
+  Vector3 diff = Vector3Subtract(position, capsule->startPos);
+  // print_vectors(2, capsule->startPos, capsule->endPos);
+  capsule->startPos = position;
+  capsule->endPos = Vector3Add(diff, capsule->endPos);
+  // print_vectors(3, diff, capsule->startPos, capsule->endPos);
+}
+Vector3 CapsuleShapePosition(Shape *shape) {
+  CapsuleShape *capsule = shape->shapePtr;
+  return capsule->startPos;
+}
+
+void InitShape(Shape *shape) {
+  switch (shape->typeID) {
+  case CUBE:
+    shape->draw = DrawCubeShape;
+    shape->move = MoveCubeShape;
+    shape->position = CubeShapePosition;
+    break;
+
+  case SPHERE: {
+    shape->draw = DrawSphereShape;
+    shape->move = MoveSphereShape;
+    shape->position = SphereShapePosition;
+    break;
+  }
+  case CYLINDER: {
+    shape->draw = DrawCylinderShape;
+    shape->move = MoveCylinderShape;
+    shape->position = CylinderShapePosition;
+    break;
+  }
+  case CAPSULE: {
+    shape->draw = DrawCapsuleShape;
+    shape->move = MoveCapsuleShape;
+    shape->position = CapsuleShapePosition;
+    break;
+  }
+  default:
+    assert(0);
+    return;
+  }
+
+  shape->home = shape->position(shape);
+}
+
+void InitShapes(int count, Shape *shapes[]) {
+  for (int i = 0; i < count; i++) {
+    InitShape(shapes[i]);
+  }
+}
+
+void DrawShapes(int count, Shape *shapes[]) {
+  assert(count >= 0);
+  assert(shapes);
+  for (int i = 0; i < count; i++) {
+    Shape *shape = shapes[i];
+    shape->draw(shape);
+  }
 }
 
 #endif // DAVLIB_IMPLEMENTATION
