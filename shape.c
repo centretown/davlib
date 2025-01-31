@@ -1,6 +1,8 @@
 #include "davlib.h"
 #include <assert.h>
 
+void UnloadNone(Shape *shape) {}
+
 void DrawCubeShape(Shape *shape) {
   CubeShape *cube = shape->shapePtr;
   DrawCubeV(cube->position, cube->size, cube->color);
@@ -62,27 +64,27 @@ Vector3 CapsuleShapePosition(Shape *shape) {
 void InitShape(Shape *shape) {
   switch (shape->typeID) {
   case CUBE:
-    shape->draw = DrawCubeShape;
-    shape->move = MoveCubeShape;
-    shape->position = CubeShapePosition;
+    shape->Draw = DrawCubeShape;
+    shape->Move = MoveCubeShape;
+    shape->Position = CubeShapePosition;
     break;
 
   case SPHERE: {
-    shape->draw = DrawSphereShape;
-    shape->move = MoveSphereShape;
-    shape->position = SphereShapePosition;
+    shape->Draw = DrawSphereShape;
+    shape->Move = MoveSphereShape;
+    shape->Position = SphereShapePosition;
     break;
   }
   case CYLINDER: {
-    shape->draw = DrawCylinderShape;
-    shape->move = MoveCylinderShape;
-    shape->position = CylinderShapePosition;
+    shape->Draw = DrawCylinderShape;
+    shape->Move = MoveCylinderShape;
+    shape->Position = CylinderShapePosition;
     break;
   }
   case CAPSULE: {
-    shape->draw = DrawCapsuleShape;
-    shape->move = MoveCapsuleShape;
-    shape->position = CapsuleShapePosition;
+    shape->Draw = DrawCapsuleShape;
+    shape->Move = MoveCapsuleShape;
+    shape->Position = CapsuleShapePosition;
     break;
   }
   default:
@@ -90,10 +92,9 @@ void InitShape(Shape *shape) {
     return;
   }
 
-  shape->home = shape->position(shape);
+  shape->home = shape->Position(shape);
+  shape->Unload = UnloadNone;
 }
-
-void UnloadNone(Shape *shape) {}
 
 void InitShapes(int count, Shape *shapes[]) {
   for (int i = 0; i < count; i++) {
@@ -106,6 +107,6 @@ void DrawShapes(int count, Shape *shapes[]) {
   assert(shapes);
   for (int i = 0; i < count; i++) {
     Shape *shape = shapes[i];
-    shape->draw(shape);
+    shape->Draw(shape);
   }
 }

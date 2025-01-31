@@ -76,11 +76,11 @@ typedef struct Shape {
   Vector3 home;
   // direction bearing
   void *shapePtr;
-  void (*draw)(struct Shape *);
-  void (*move)(struct Shape *, Vector3 v);
-  Vector3 (*position)(struct Shape *);
-  void (*unload)(struct Shape *);
-  // void (*color)(struct Shape *, Color);
+  void (*Draw)(struct Shape *);
+  void (*Move)(struct Shape *, Vector3 v);
+  Vector3 (*Position)(struct Shape *);
+  void (*Unload)(struct Shape *);
+  // void (*Colour)(struct Shape *, Color);
 } Shape;
 
 typedef struct CubeShape {
@@ -124,6 +124,82 @@ typedef enum NavCmd {
   NAV_ESCAPE,
 } NavCmd;
 
+typedef struct ModelShape {
+  Model model;
+  Vector3 position;
+  Vector3 rotationAxis;
+  float rotationAngle;
+  Vector3 scale;
+  Color tint;
+  void *genPtr;
+} ModelShape;
+
+typedef struct MeshPoly {
+  int sides;
+  float radius;
+} MeshPoly;
+
+typedef struct MeshPlane {
+  float width;
+  float length;
+  int resX;
+  int resZ;
+} MeshPlane;
+
+typedef struct MeshCube {
+  float width;
+  float height;
+  float length;
+} MeshCube;
+
+typedef struct MeshSphere {
+  float radius;
+  int rings;
+  int slices;
+} MeshSphere;
+
+typedef struct MeshHemisphere {
+  float radius;
+  int rings;
+  int slices;
+} MeshHemisphere;
+
+typedef struct MeshCylinder {
+  float radius;
+  float height;
+  int slices;
+} MeshCylinder;
+
+typedef struct MeshCone {
+  float radius;
+  float height;
+  int slices;
+} MeshCone;
+
+typedef struct MeshTorus {
+  float radius;
+  float size;
+  int radSeg;
+  int sides;
+} MeshTorus;
+
+typedef struct MeshKnot {
+  float radius;
+  float size;
+  int radSeg;
+  int sides;
+} MeshKnot;
+
+typedef struct MeshHeightmap {
+  Image heightmap;
+  Vector3 size;
+} MeshHeightmap;
+
+typedef struct MeshCubicmap {
+  Image cubicmap;
+  Vector3 cubeSize;
+} MeshCubicmap;
+
 #define CLAMPNUM(num, lo, hi) ((num >= hi) ? lo : (num < lo) ? hi - 1 : num)
 #define VEC3_NULL ((Vector3){0})
 #define IS_VEC3_EQUAL(v, u) ((v.x == u.x) && (v.y == u.y) && (v.z == u.z))
@@ -147,10 +223,13 @@ Vector3 KeysToVector(Vector3 vec, Vector3 base, float scale);
 
 void DrawShapes(int count, Shape *shapes[]);
 void InitShapes(int count, Shape *shapes[]);
+
 void DrawMenu(Menu *menu, Position position);
 void NavigateMenu(Menu *menu, double now);
 
 void print_vectors(const int count, ...);
+
+void InitModelShape(Shape *shape, Texture2D texture);
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -172,8 +251,9 @@ void print_vectors(const int count, ...) {
 
 #include "gamepad.c"
 #include "keyboard.c"
+#include "navigate.c"
 #include "shape.c"
-#include "vector.c"
+#include "model.c"
 
 #endif // DAVLIB_IMPLEMENTATION
 
