@@ -68,12 +68,13 @@ typedef enum ShapeTypeID {
   MESH_KNOT,
   MESH_HEIGHTMAP,
   MESH_CUBICMAP,
+  MESH_FIRST = MESH_POLY,
 } ShapeTypeID;
 
 typedef struct Shape {
-  ShapeTypeID typeID;
-  double rate;
+  Vector3 rate;
   Vector3 home;
+  ShapeTypeID typeID;
   // direction bearing
   void *shapePtr;
   void (*Draw)(struct Shape *);
@@ -126,6 +127,9 @@ typedef enum NavCmd {
 
 typedef struct ModelShape {
   Model model;
+  Mesh mesh;
+  Material material;
+  Matrix matrix;
   Vector3 position;
   Vector3 rotationAxis;
   float rotationAngle;
@@ -213,7 +217,7 @@ bool CheckButton(int button);
 const char *AxisName(int axis);
 const char *ButtonName(int button);
 Vector3 ButtonsToVector(Vector3 vec, Vector3 base, float scale);
-Vector3 AxesToVector(Vector3 vec, Vector3 base, float scale);
+Vector3 AxesToVector(Vector3 vec, float scale);
 Rectangle ButtonsToRectangle(Rectangle rec, Rectangle recbase, float scale);
 
 // keyboard
@@ -222,15 +226,14 @@ int InputKeyNav(double now);
 Vector3 KeysToVector(Vector3 vec, Vector3 base, float scale);
 
 void DrawShapes(int count, Shape *shapes[]);
-void InitShapes(int count, Shape *shapes[]);
+void InitShapes(int count, Shape *shapes[], Material material);
 
 void DrawMenu(Menu *menu, Position position);
 void NavigateMenu(Menu *menu, double now);
 
 void print_vectors(const int count, ...);
 
-void InitModelShape(Shape *shape, Texture2D texture);
-
+void InitModelShape(Shape *shape, Material material);
 ///////////////////////////////////////////////////////////////////////////
 
 #ifdef DAVLIB_IMPLEMENTATION
@@ -251,9 +254,9 @@ void print_vectors(const int count, ...) {
 
 #include "gamepad.c"
 #include "keyboard.c"
+#include "model.c"
 #include "navigate.c"
 #include "shape.c"
-#include "model.c"
 
 #endif // DAVLIB_IMPLEMENTATION
 

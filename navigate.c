@@ -2,8 +2,8 @@
 
 #include <assert.h>
 
-static double nextUpdate = 0.0f;
-static double nextInterval = 0.5f;
+// static double nextUpdate = 0.0f;
+// static double nextInterval = 0.5f;
 
 const static int navButtons[] = {
     GAMEPAD_BUTTON_LEFT_FACE_LEFT,  GAMEPAD_BUTTON_LEFT_FACE_RIGHT,
@@ -76,17 +76,45 @@ void NavigateMenu(Menu *menu, double now) {
   }
 }
 
+typedef struct TimedInput {
+  double interval;
+  double lastTime; // when last input set
+  double nextTime; // when last input set
+  int lastInput;   // set to 0 after interval
+} TimedInput;
+
+// static TimedInput keyIn = {
+//     .interval = 0.5f,
+//     .lastTime = 0.0f,
+//     .nextTime = 0.0f,
+//     .lastInput = 0,
+// };
+
+static TimedInput padIn = {
+    .interval = 0.4f,
+    .lastTime = 0.0f,
+    .nextTime = 0.0f,
+    .lastInput = CMD_NONE,
+};
+
 int InputGamepad(int count, const int *buttons, double now) {
   assert(buttons);
   assert(count >= 0);
+
+  bool found = false;
   for (int i = 0; i < count; i++) {
-    if (CheckButton(buttons[i])) {
-      if (now >= nextUpdate) {
-        nextUpdate = now + nextInterval;
-        return i;
-      }
+    found = CheckButton(buttons[i]);
+    if (found) {
+      padIn.lastInput = i;
       break;
     }
+  }
+
+  if (now >= padIn.nextTime && found) {
+    int in = padIn.lastInput;
+    padIn.lastInput = CMD_NONE;
+    padIn.nextTime = now + padIn.interval;
+    return in;
   }
   return CMD_NONE;
 }
@@ -94,6 +122,8 @@ int InputGamepad(int count, const int *buttons, double now) {
 int InputGamepadNav(double now) {
   return InputGamepad(navButtonsSize, navButtons, now);
 }
+static double nextUpdate = 0.0f;
+static double nextInterval = 0.5f;
 
 int InputKeys(int count, const int *keys, double now) {
   assert(keys);

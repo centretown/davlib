@@ -1,4 +1,5 @@
 #include "davlib.h"
+#include "raylib.h"
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -51,46 +52,49 @@ inline bool IsGamePadValid(int pad) {
   return true;
 }
 
-static int axes[] = {GAMEPAD_AXIS_RIGHT_X, GAMEPAD_AXIS_RIGHT_Y,
-                     GAMEPAD_AXIS_LEFT_Y};
+static Vector3 axisScale = {.x = 0.05f, .y = 0.02f, .z = 0.05f};
 
-Vector3 AxesToVectorPro(Vector3 vec, Vector3 base, float scale, Vector3 min,
-                        Vector3 max) {
-  enum { AXIS_X, AXIS_Z, AXIS_Y };
+static int axes[] = {GAMEPAD_AXIS_LEFT_X, GAMEPAD_AXIS_RIGHT_X,
+                     GAMEPAD_AXIS_LEFT_Y, GAMEPAD_AXIS_RIGHT_Y};
+
+Vector3 AxesToVectorPro(Vector3 vec, float scale, Vector3 min, Vector3 max) {
+
+  enum { AXIS_X, AXIS_Z, AXIS_Y, AXIS_Y2, AXIS_COUNT };
   for (int pad = 0; pad < maxGamePads; pad++) {
     if (!IsGamePadValid(pad)) {
       continue;
     }
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < AXIS_COUNT; i++) {
       int axis = axes[i];
-      float current = GamePads[pad].axisValues[axis];
+      // float current = GamePads[pad].axisValues[axis];
       float value = GetGamepadAxisMovement(pad, axis);
-      if (value != current) {
-        GamePads[pad].axisValues[axis] = value;
+      if (value != 0) {
+        GamePads[pad].axisValues[axis] = value * scale;
         switch (i) {
         case AXIS_X:
-          vec.x = value * scale + base.x;
+          vec.x += value * axisScale.x;
           break;
         case AXIS_Z:
-          vec.z = value * scale + base.z;
+          vec.z -= value * axisScale.z;
           break;
         case AXIS_Y:
-          vec.y = value * scale + base.y;
+        case AXIS_Y2:
+          vec.y -= value * axisScale.y;
           break;
         }
       }
     }
   }
-  if (!IS_VEC3_EQUAL(min, max)) {
-    vec.x = CLAMPNUM(vec.x, min.x, max.x);
-    vec.y = CLAMPNUM(vec.y, min.y, max.y);
-    vec.z = CLAMPNUM(vec.z, min.z, max.z);
-  }
+  // if (!IS_VEC3_EQUAL(min, max)) {
+  //   vec.x = CLAMPNUM(vec.x, min.x, max.x);
+  //   vec.y = CLAMPNUM(vec.y, min.y, max.y);
+  //   vec.z = CLAMPNUM(vec.z, min.z, max.z);
+  // }
   return vec;
 }
 
-Vector3 AxesToVector(Vector3 vec, Vector3 base, float scale) {
-  return AxesToVectorPro(vec, base, scale, VEC3_NULL, VEC3_NULL);
+Vector3 AxesToVector(Vector3 vec, float scale) {
+  return AxesToVectorPro(vec, scale, VEC3_NULL, VEC3_NULL);
 }
 
 bool CheckButton(int button) {

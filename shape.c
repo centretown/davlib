@@ -1,4 +1,5 @@
 #include "davlib.h"
+#include "raylib.h"
 #include <assert.h>
 
 void UnloadNone(Shape *shape) {}
@@ -96,9 +97,13 @@ void InitShape(Shape *shape) {
   shape->Unload = UnloadNone;
 }
 
-void InitShapes(int count, Shape *shapes[]) {
+void InitShapes(int count, Shape *shapes[], Material material) {
   for (int i = 0; i < count; i++) {
-    InitShape(shapes[i]);
+    Shape *shape = shapes[i];
+    if (shape->typeID < MESH_FIRST)
+      InitShape(shapes[i]);
+    else
+      InitModelShape(shapes[i], material);
   }
 }
 

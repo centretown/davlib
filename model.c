@@ -1,10 +1,19 @@
 #include "davlib.h"
+#include "raylib.h"
+#include "raymath.h"
 #include <assert.h>
+#include <stdio.h>
 
 void DrawModelShape(Shape *shape) {
   ModelShape *model = shape->shapePtr;
-  DrawModelEx(model->model, model->position, model->rotationAxis,
-              model->rotationAngle, model->scale, model->tint);
+  Matrix mx =
+      MatrixTranslate(model->position.x, model->position.y, model->position.z);
+  if (!IsMaterialValid(model->material)) {
+    printf("MATERIAL INVALID\n");
+  }
+  DrawMesh(model->mesh, model->material, mx);
+  // DrawModelEx(model->model, model->position, model->rotationAxis,
+  //             model->rotationAngle, model->scale, model->tint);
 }
 
 void MoveModelShape(Shape *shape, Vector3 position) {
@@ -19,12 +28,10 @@ Vector3 ModelShapePosition(Shape *shape) {
 
 void UnloadModelShape(Shape *shape) {
   ModelShape *model = shape->shapePtr;
-  UnloadModel(model->model);
+  UnloadMesh(model->mesh);
 }
 
-void InitModelShape(Shape *shape, Texture2D texture) {
-  Mesh mesh = {0};
-  Model model = {0};
+void InitModelShape(Shape *shape, Material material) {
   assert(shape);
   assert(shape->shapePtr);
   ModelShape *modelShape = shape->shapePtr;
@@ -33,83 +40,79 @@ void InitModelShape(Shape *shape, Texture2D texture) {
   switch (shape->typeID) {
   case MESH_POLY: {
     MeshPoly *poly = modelShape->genPtr;
-    mesh = GenMeshPoly(poly->sides, poly->radius);
-    model = LoadModelFromMesh(mesh);
+    modelShape->mesh = GenMeshPoly(poly->sides, poly->radius);
     break;
   }
   case MESH_PLANE: {
     MeshPlane *plane = modelShape->genPtr;
-    mesh = GenMeshPlane(plane->width, plane->length, plane->resX, plane->resZ);
-    model = LoadModelFromMesh(mesh);
+    modelShape->mesh =
+        GenMeshPlane(plane->width, plane->length, plane->resX, plane->resZ);
     break;
   }
   case MESH_CUBE: {
     MeshCube *cube = modelShape->genPtr;
-    mesh = GenMeshCube(cube->width, cube->height, cube->length);
-    model = LoadModelFromMesh(mesh);
+    modelShape->mesh = GenMeshCube(cube->width, cube->height, cube->length);
     break;
   }
   case MESH_SPHERE: {
     MeshSphere *sphere = modelShape->genPtr;
-    mesh = GenMeshSphere(sphere->radius, sphere->rings, sphere->slices);
-    model = LoadModelFromMesh(mesh);
+    modelShape->mesh =
+        GenMeshSphere(sphere->radius, sphere->rings, sphere->slices);
     break;
   }
   case MESH_HEMISPHERE: {
     MeshHemisphere *hemisphere = modelShape->genPtr;
-    mesh = GenMeshHemiSphere(hemisphere->radius, hemisphere->rings,
-                             hemisphere->slices);
-    model = LoadModelFromMesh(mesh);
+    modelShape->mesh = GenMeshHemiSphere(hemisphere->radius, hemisphere->rings,
+                                         hemisphere->slices);
     break;
   }
   case MESH_CYLINDER: {
     MeshCylinder *cylinder = modelShape->genPtr;
-    mesh =
-        GenMeshCylinder(cylinder->radius, cylinder->slices, cylinder->slices);
-    model = LoadModelFromMesh(mesh);
+    modelShape->mesh =
+        GenMeshCylinder(cylinder->radius, cylinder->height, cylinder->slices);
     break;
   }
   case MESH_CONE: {
     MeshCone *cone = modelShape->genPtr;
-    mesh = GenMeshCone(cone->radius, cone->height, cone->slices);
-    model = LoadModelFromMesh(mesh);
+    modelShape->mesh = GenMeshCone(cone->radius, cone->height, cone->slices);
     break;
   }
   case MESH_TORUS: {
     MeshTorus *torus = modelShape->genPtr;
-    mesh =
+    modelShape->mesh =
         GenMeshTorus(torus->radius, torus->size, torus->radSeg, torus->sides);
-    model = LoadModelFromMesh(mesh);
     break;
   }
   case MESH_KNOT: {
     MeshKnot *knot = modelShape->genPtr;
-    mesh = GenMeshKnot(knot->radius, knot->size, knot->radSeg, knot->sides);
-    model = LoadModelFromMesh(mesh);
+    modelShape->mesh =
+        GenMeshKnot(knot->radius, knot->size, knot->radSeg, knot->sides);
     break;
   }
   // case MESH_HEIGHTMAP: {
   //   mesh = GenMeshHeightmap();
-  //   model = LoadModelFromMesh(mesh);
   //   break;
   // }
   // case MESH_CUBICMAP: {
   //   mesh = GenMeshCubicmap();
-  //   model = LoadModelFromMesh(mesh);
   //   break;
   default:
     return;
   }
 
-  Material material = LoadMaterialDefault();
+  // Model model = {0};
+  // model = LoadModelFromMesh(mesh);
   // TODO UnloadMaterial(material);
   //  UnloadTexture( texture);
   // Set texture for a material map type (MATERIAL_MAP_DIFFUSE,
   // MATERIAL_MAP_SPECULAR...)
-  SetMaterialTexture(&material, MATERIAL_MAP_DIFFUSE, texture);
-  modelShape->model = model;
+  //
+
+  modelShape->material = material;
+  modelShape->matrix = MatrixIdentity();
   shape->Draw = DrawModelShape;
   shape->Move = MoveModelShape;
   shape->Position = ModelShapePosition;
+  shape->home = shape->Position(shape);
   shape->Unload = UnloadModelShape;
 }
