@@ -103,7 +103,7 @@ void InitShapes(int count, Shape *shapes[], Material material) {
     if (shape->typeID < MESH_FIRST)
       InitShape(shapes[i]);
     else
-      InitModelShape(shapes[i], material);
+      InitMeshShape(shapes[i], material);
   }
 }
 

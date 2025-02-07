@@ -35,12 +35,41 @@ typedef struct Theme {
   Color backgroundColor;
 } Theme;
 
+typedef enum MenuItemType {
+  MENU_SUB,
+  MENU_CHOICE,
+  MENU_FLOAT,
+  MENU_INT,
+} MenuItemType;
+
 typedef struct MenuItem {
   const char *label;
-  int currentChoice;
-  int choiceCount;
-  char **choices;
-  void (*onChoose)(void *, int, int);
+  MenuItemType itemType;
+  union {
+    struct {
+      struct MenuItem **items;
+      int itemCurrent;
+      int itemCount;
+    };
+    struct {
+      char **choices;
+      int choiceCurrent;
+      int choiceCount;
+    };
+    struct {
+      float fvalue;
+      float fmin;
+      float fmax;
+      float finc;
+    };
+    struct {
+      int ivalue;
+      int imin;
+      int imax;
+      int iinc;
+    };
+  };
+  void (*onChoose)(void *);
   Rectangle rect;
 } MenuItem;
 
@@ -50,6 +79,7 @@ typedef enum ArrowDirection {
 } ArrowDirection;
 
 typedef struct Menu {
+  Vector2 mousePos;
   Position position;
   const char *title;
   MenuItem **items;
@@ -135,7 +165,6 @@ typedef struct CapsuleShape {
 #define CMD_NONE -1
 
 typedef enum NavCmd {
-  NAV_NONE = CMD_NONE,
   NAV_LEFT = 0,
   NAV_RIGHT,
   NAV_UP,
@@ -144,8 +173,7 @@ typedef enum NavCmd {
   NAV_ESCAPE,
 } NavCmd;
 
-typedef struct ModelShape {
-  Model model;
+typedef struct MeshShape {
   Mesh mesh;
   Material material;
   Matrix matrix;
@@ -155,7 +183,7 @@ typedef struct ModelShape {
   Vector3 scale;
   Color tint;
   void *genPtr;
-} ModelShape;
+} MeshShape;
 
 typedef struct MeshPoly {
   int sides;
@@ -246,7 +274,7 @@ int InputKeyNav(double now);
 Vector3 KeysToVector(Vector3 vec, Vector3 base, float scale);
 
 // mouse
-int InputMouse(int count, const Rectangle *rects, double now);
+int InputMouse(int count, const Rectangle *rects, double now, Vector2 mousePos);
 void InputMouseMenu(Menu *menu, double now);
 
 void DrawShapes(int count, Shape *shapes[]);
@@ -257,7 +285,9 @@ void NavigateMenu(int cmd, Menu *menu, double now);
 
 void print_vectors(const int count, ...);
 
-void InitModelShape(Shape *shape, Material material);
+void InitMeshShape(Shape *shape, Material material);
+
+bool PointInRect(Vector2 point, Rectangle rect);
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -279,7 +309,7 @@ void print_vectors(const int count, ...) {
 
 #include "gamepad.c"
 #include "keyboard.c"
-#include "model.c"
+#include "mesh.c"
 #include "navigate.c"
 #include "shape.c"
 

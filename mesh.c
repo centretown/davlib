@@ -4,8 +4,8 @@
 #include <assert.h>
 #include <stdio.h>
 
-void DrawModelShape(Shape *shape) {
-  ModelShape *model = shape->shapePtr;
+void DrawMeshShape(Shape *shape) {
+  MeshShape *model = shape->shapePtr;
   Matrix mx =
       MatrixTranslate(model->position.x, model->position.y, model->position.z);
   if (!IsMaterialValid(model->material)) {
@@ -16,25 +16,25 @@ void DrawModelShape(Shape *shape) {
   //             model->rotationAngle, model->scale, model->tint);
 }
 
-void MoveModelShape(Shape *shape, Vector3 position) {
-  ModelShape *model = shape->shapePtr;
+void MoveMeshShape(Shape *shape, Vector3 position) {
+  MeshShape *model = shape->shapePtr;
   model->position = position;
 }
 
-Vector3 ModelShapePosition(Shape *shape) {
-  ModelShape *model = shape->shapePtr;
+Vector3 MeshShapePosition(Shape *shape) {
+  MeshShape *model = shape->shapePtr;
   return model->position;
 }
 
-void UnloadModelShape(Shape *shape) {
-  ModelShape *model = shape->shapePtr;
+void UnloadMeshShape(Shape *shape) {
+  MeshShape *model = shape->shapePtr;
   UnloadMesh(model->mesh);
 }
 
-void InitModelShape(Shape *shape, Material material) {
+void InitMeshShape(Shape *shape, Material material) {
   assert(shape);
   assert(shape->shapePtr);
-  ModelShape *modelShape = shape->shapePtr;
+  MeshShape *modelShape = shape->shapePtr;
   assert(modelShape->genPtr);
 
   switch (shape->typeID) {
@@ -110,9 +110,9 @@ void InitModelShape(Shape *shape, Material material) {
 
   modelShape->material = material;
   modelShape->matrix = MatrixIdentity();
-  shape->Draw = DrawModelShape;
-  shape->Move = MoveModelShape;
-  shape->Position = ModelShapePosition;
+  shape->Draw = DrawMeshShape;
+  shape->Move = MoveMeshShape;
+  shape->Position = MeshShapePosition;
   shape->home = shape->Position(shape);
-  shape->Unload = UnloadModelShape;
+  shape->Unload = UnloadMeshShape;
 }
