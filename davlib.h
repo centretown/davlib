@@ -29,6 +29,9 @@ typedef struct Theme {
   Color titleActive;
   Color labelActive;
   Color valueActive;
+  Color titleHover;
+  Color labelHover;
+  Color valueHover;
   Color backgroundColor;
 } Theme;
 
@@ -38,17 +41,32 @@ typedef struct MenuItem {
   int choiceCount;
   char **choices;
   void (*onChoose)(void *, int, int);
+  Rectangle rect;
 } MenuItem;
+
+typedef enum ArrowDirection {
+  ARROW_LEFT,
+  ARROW_RIGHT,
+} ArrowDirection;
 
 typedef struct Menu {
   Position position;
-  int valueColumn;
   const char *title;
-  int current;
-  int itemCount;
   MenuItem **items;
   Theme *theme;
   void *custom; // passed to onChoose in MenuItem
+
+  Color colorDim;
+  Color colorHover;
+
+  Rectangle arrowRects[2];
+  Texture2D leftArrow;
+  Texture2D rightArrow;
+
+  int current;
+  int hoverItem;
+  int itemCount;
+  int valueColumn;
 } Menu;
 
 // void DrawModel(Model model, Vector3 position, float scale, Color tint);
@@ -115,6 +133,7 @@ typedef struct CapsuleShape {
 } CapsuleShape;
 
 #define CMD_NONE -1
+
 typedef enum NavCmd {
   NAV_NONE = CMD_NONE,
   NAV_LEFT = 0,
@@ -211,6 +230,7 @@ typedef struct MeshCubicmap {
 int InputNav(double now);
 
 // gamepad
+bool IsGamePadValid(int pad);
 int InputGamepad(int count, const int *buttons, double now);
 int InputGamepadNav(double now);
 bool CheckButton(int button);
@@ -225,21 +245,26 @@ int InputKeys(int count, const int *keys, double now);
 int InputKeyNav(double now);
 Vector3 KeysToVector(Vector3 vec, Vector3 base, float scale);
 
+// mouse
+int InputMouse(int count, const Rectangle *rects, double now);
+void InputMouseMenu(Menu *menu, double now);
+
 void DrawShapes(int count, Shape *shapes[]);
 void InitShapes(int count, Shape *shapes[], Material material);
 
 void DrawMenu(Menu *menu, Position position);
-void NavigateMenu(Menu *menu, double now);
+void NavigateMenu(int cmd, Menu *menu, double now);
 
 void print_vectors(const int count, ...);
 
 void InitModelShape(Shape *shape, Material material);
+
 ///////////////////////////////////////////////////////////////////////////
 
 #ifdef DAVLIB_IMPLEMENTATION
-#undef DAVLIB_IMPLEMENTATION
 
 #include <stdarg.h>
+#include <stdio.h>
 
 void print_vectors(const int count, ...) {
   va_list args;

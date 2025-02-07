@@ -42,7 +42,7 @@ void RegisterGamePad(int pad) {
   strncpy(gamepad->name, name, sizeof(gamepad->name) - 1);
 }
 
-inline bool IsGamePadValid(int pad) {
+bool IsGamePadValid(int pad) {
   if (pad < 0 || pad >= maxGamePads || !IsGamepadAvailable(pad)) {
     return false;
   }
