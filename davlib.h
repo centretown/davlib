@@ -16,13 +16,7 @@ typedef struct Pad {
   char name[80];
 } Pad;
 
-typedef struct Position {
-  int x;
-  int y;
-} Position;
-
 typedef struct Theme {
-  int fontSize;
   Color titleColor;
   Color labelColor;
   Color valueColor;
@@ -33,6 +27,17 @@ typedef struct Theme {
   Color labelHover;
   Color valueHover;
   Color backgroundColor;
+  Color colorDim;
+  Color colorHover;
+  Texture2D leftArrow;
+  Texture2D rightArrow;
+  Texture2D inArrow;
+  Texture2D outArrow;
+  Texture2D menuInactivePic;
+  Texture2D menuActivePic;
+  int fontSize;
+  int padding;
+  int valueColumn;
 } Theme;
 
 typedef enum MenuItemType {
@@ -42,12 +47,14 @@ typedef enum MenuItemType {
   MENU_INT,
 } MenuItemType;
 
+struct Menu;
+
 typedef struct MenuItem {
   const char *label;
   MenuItemType itemType;
   union {
     struct {
-      struct MenuItem **items;
+      struct Menu *menu;
       int itemCurrent;
       int itemCount;
     };
@@ -79,24 +86,18 @@ typedef enum ArrowDirection {
 } ArrowDirection;
 
 typedef struct Menu {
-  Vector2 mousePos;
-  Position position;
+  // Vector2 mousePos;
+  // Position position;
   const char *title;
   MenuItem **items;
-  Theme *theme;
+  // Theme *theme;
   void *custom; // passed to onChoose in MenuItem
 
-  Color colorDim;
-  Color colorHover;
-
   Rectangle arrowRects[2];
-  Texture2D leftArrow;
-  Texture2D rightArrow;
 
   int current;
   int hoverItem;
   int itemCount;
-  int valueColumn;
 } Menu;
 
 // void DrawModel(Model model, Vector3 position, float scale, Color tint);
@@ -275,12 +276,12 @@ Vector3 KeysToVector(Vector3 vec, Vector3 base, float scale);
 
 // mouse
 int InputMouse(int count, const Rectangle *rects, double now, Vector2 mousePos);
-void InputMouseMenu(Menu *menu, double now);
+void InputMouseMenu(Menu *menu, double now, Vector2 point);
 
 void DrawShapes(int count, Shape *shapes[]);
 void InitShapes(int count, Shape *shapes[], Material material);
 
-void DrawMenu(Menu *menu, Position position);
+void DrawMenu(Menu *menu, Theme *theme, Vector2 position, Vector2 point);
 void NavigateMenu(int cmd, Menu *menu, double now);
 
 void print_vectors(const int count, ...);
