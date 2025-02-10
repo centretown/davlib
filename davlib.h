@@ -18,8 +18,7 @@ typedef struct Pad {
 
 typedef struct Theme {
   Color titleColor;
-  Color titleActive;
-  Color titleHover;
+  Color panelColor;
   Color labelColor;
   Color labelActive;
   Color labelHover;
@@ -173,6 +172,11 @@ typedef enum NavCmd {
   NAV_BACK,
 } NavCmd;
 
+typedef struct Navigator {
+  NavCmd cmd;
+  float ratio;
+} Navigator;
+
 typedef struct MeshShape {
   Mesh mesh;
   Material material;
@@ -255,12 +259,12 @@ typedef struct MeshCubicmap {
 #define VEC3_NULL ((Vector3){0})
 #define IS_VEC3_EQUAL(v, u) ((v.x == u.x) && (v.y == u.y) && (v.z == u.z))
 
-int InputNav(double now);
+Navigator InputNav(double now);
 
 // gamepad
 bool IsGamePadValid(int pad);
-int InputGamepad(int count, const int *buttons, double now);
-int InputGamepadNav(double now);
+Navigator InputGamepad(int count, const int *buttons, double now);
+Navigator InputGamepadNav(double now);
 bool CheckButton(int button);
 const char *AxisName(int axis);
 const char *ButtonName(int button);
@@ -269,8 +273,8 @@ Vector3 AxesToVector(Vector3 vec, float scale);
 Rectangle ButtonsToRectangle(Rectangle rec, Rectangle recbase, float scale);
 
 // keyboard
-int InputKeys(int count, const int *keys, double now);
-int InputKeyNav(double now);
+Navigator InputKeys(int count, const int *keys, double now);
+Navigator InputKeyNav(double now);
 Vector3 KeysToVector(Vector3 vec, Vector3 base, float scale);
 
 // mouse
@@ -281,7 +285,7 @@ void InitShapes(int count, Shape *shapes[], Material material);
 
 void InputMouseMenu(double now, Vector2 point);
 void DrawMenu(Theme *theme, Vector2 position, Vector2 point);
-void NavigateMenu(int cmd, double now);
+void NavigateMenu(Navigator nav, double now);
 
 Menu *CurrentMenu();
 Menu *MenuTop();
@@ -294,8 +298,62 @@ void InitMeshShape(Shape *shape, Material material);
 
 bool PointInRect(Vector2 point, Rectangle rect);
 
+// theme handlers
+void OnChooseFont(Menu *menuptr);
+void OnSetColorRed(Menu *menuptr);
+void OnSetColorGreen(Menu *menuptr);
+void OnSetColorBlue(Menu *menuptr);
+void OnSetColorAlpha(Menu *menuptr);
+void OnPushTitleColor(Menu*menuptr);
+void OnPushPanelColor(Menu*menuptr);
+void OnPushTitleHover(Menu*menuptr);
+void OnPushLabelColor(Menu*menuptr);
+void OnPushLabelActive(Menu*menuptr);
+void OnPushLabelHover(Menu*menuptr);
+void OnPushValueColor(Menu*menuptr);
+void OnPushValueActive(Menu*menuptr);
+void OnPushValueHover(Menu*menuptr);
+void OnPushBackgroundColor(Menu*menuptr);
+void OnPushColorDim(Menu*menuptr);
+void OnPushColorHover(Menu*menuptr);
+
+// OnChoose Handler Macros
+#include <assert.h>
+#define MENU_ITEM_CHOICE(menuptr)                                              \
+  assert(menuptr);                                                             \
+  Menu *menu = menuptr;                                                        \
+  MenuItem *item = menu->items[menu->current];                                 \
+  int choiceCurrent = item->choiceCurrent;
+
+#define MENU_ITEM_FLOAT(menuptr)                                               \
+  assert(menuptr);                                                             \
+  Menu *menu = menuptr;                                                        \
+  MenuItem *item = menu->items[menu->current];                                 \
+  float value = item->fvalue;
+
+#define MENU_ITEM_INT(menuptr)                                                 \
+  assert(menuptr);                                                             \
+  Menu *menu = menuptr;                                                        \
+  assert(menu);                                                                \
+  MenuItem *item = menu->items[menu->current];                                 \
+  int value = item->ivalue;
+
+#define SET_COLOR_ITEMS(menuptr, c)                                            \
+  Menu *menu = menuptr;                                                        \
+  MenuItem **items = menu->items;                                              \
+  Color *color = c;                                                            \
+  menu->data = color;                                                          \
+  items[0]->ivalue = color->r;                                                 \
+  items[1]->ivalue = color->g;                                                 \
+  items[2]->ivalue = color->b;                                                 \
+  items[3]->ivalue = color->a;
+
+extern Theme *DAV_theme;
+extern MenuItem *DAV_colorItems[];
+extern Menu *DAV_themeMenu;
 ///////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////
 #ifdef DAVLIB_IMPLEMENTATION
 
 #include <stdarg.h>
@@ -317,6 +375,7 @@ void print_vectors(const int count, ...) {
 #include "mesh.c"
 #include "navigate.c"
 #include "shape.c"
+#include "menus.c"
 
 #endif // DAVLIB_IMPLEMENTATION
 

@@ -66,9 +66,25 @@ void DrawItemValue(MenuItem *item, int x, int y, int fontSize, Color color) {
   }
 }
 
-void DrawArrows(Menu *menu, Theme *theme, float scale, Vector2 point) {
+void DrawArrows(Menu *menu, MenuItem *item, Theme *theme, int col,
+                Vector2 point) {
   Color hover = theme->colorHover;
   Color dim = theme->colorDim;
+  float fontSize = theme->fontSize;
+  float scale = fontSize / 24.0f;
+  float arrowWidth = theme->leftArrow.width * scale;
+  float arrowHeight = theme->leftArrow.height * scale;
+
+  // calculate size and positon of arrows
+  menu->arrowRects[ARROW_LEFT].y = menu->arrowRects[ARROW_RIGHT].y =
+      item->rect.y - fontSize / 4.0f;
+  menu->arrowRects[ARROW_LEFT].width = menu->arrowRects[ARROW_RIGHT].width =
+      arrowWidth;
+  menu->arrowRects[ARROW_LEFT].height = menu->arrowRects[ARROW_RIGHT].height =
+      arrowHeight;
+  menu->arrowRects[ARROW_LEFT].x = col - (theme->leftArrow.width * scale + 8);
+  menu->arrowRects[ARROW_RIGHT].x = col + theme->valueColumn * fontSize;
+
   bool isHovered = PointInRect(point, menu->arrowRects[ARROW_LEFT]);
   DrawTextureEx(
       theme->leftArrow,
@@ -81,6 +97,9 @@ void DrawArrows(Menu *menu, Theme *theme, float scale, Vector2 point) {
                 0.0f, scale, (isHovered) ? hover : dim);
 }
 
+static float roundnessFactor = 0.075f;
+static int roundnessSegments = 8;
+
 void DrawMenu(Theme *theme, Vector2 position, Vector2 point) {
   Menu *menu = CurrentMenu();
   assert(theme);
@@ -90,10 +109,6 @@ void DrawMenu(Theme *theme, Vector2 position, Vector2 point) {
   int baseX = position.x + theme->padding;
   int baseY = position.y + theme->padding;
 
-  float scale = fontSize / 24.0f;
-  float arrowWidth = theme->leftArrow.width * scale;
-  float arrowHeight = theme->leftArrow.height * scale;
-
   Rectangle panel = (Rectangle){.x = position.x,
                                 .y = position.y,
                                 .width = (2 * theme->valueColumn * fontSize) +
@@ -101,8 +116,12 @@ void DrawMenu(Theme *theme, Vector2 position, Vector2 point) {
                                 .height = (menu->itemCount + 1) * lineHeight +
                                           2 * theme->padding};
 
-  DrawRectangleRounded(panel, .25f, 8,
-                       (Color){.a = 96, .r = 11, .g = 127, .b = 127});
+  // a little trickery to get a consistent roundness
+  // see DrawRectangleRounded in raylib/rshapes.c
+  float roundness = (panel.width > panel.height) ? (panel.width / panel.height)
+                                                 : (panel.height / panel.width);
+  DrawRectangleRounded(panel, roundness * roundnessFactor, roundnessSegments,
+                       theme->panelColor);
 
   float titleLength = (float)MeasureText(menu->title, fontSize);
   DrawText(menu->title, panel.width / 2 - titleLength / 2, baseY, fontSize,
@@ -131,20 +150,7 @@ void DrawMenu(Theme *theme, Vector2 position, Vector2 point) {
     Color color = theme->valueColor;
     if (itemIndex == menu->current) {
       color = theme->valueActive;
-
-      // calculate size and positon of arrows
-      menu->arrowRects[ARROW_LEFT].y = menu->arrowRects[ARROW_RIGHT].y =
-          item->rect.y - fontSize / 4.0f;
-      menu->arrowRects[ARROW_LEFT].width = menu->arrowRects[ARROW_RIGHT].width =
-          arrowWidth;
-      menu->arrowRects[ARROW_LEFT].height =
-          menu->arrowRects[ARROW_RIGHT].height = arrowHeight;
-      menu->arrowRects[ARROW_LEFT].x =
-          col - (theme->leftArrow.width * scale + 8);
-      menu->arrowRects[ARROW_RIGHT].x = col + theme->valueColumn * fontSize;
-
-      // draw arrows for the active item
-      DrawArrows(menu, theme, scale, point);
+      DrawArrows(menu, item, theme, col, point);
     } else if (itemIndex == menu->hoverItem) {
       color = theme->valueHover;
     }
@@ -153,7 +159,8 @@ void DrawMenu(Theme *theme, Vector2 position, Vector2 point) {
   }
 }
 
-void NavigateMenu(int cmd, double now) {
+void NavigateMenu(Navigator nav, double now) {
+  NavCmd cmd = nav.cmd;
   if (CMD_NONE == cmd) {
     return;
   }
@@ -218,9 +225,11 @@ static TimedInput padIn = {
     .lastInput = CMD_NONE,
 };
 
-int InputGamepad(int count, const int *buttons, double now) {
+Navigator InputGamepad(int count, const int *buttons, double now) {
   assert(buttons);
   assert(count >= 0);
+
+  Navigator nav = {.cmd = CMD_NONE};
 
   bool found = false;
   for (int i = 0; i < count; i++) {
@@ -232,15 +241,15 @@ int InputGamepad(int count, const int *buttons, double now) {
   }
 
   if (now >= padIn.nextTime && found) {
-    int in = padIn.lastInput;
+    int cmd = padIn.lastInput;
     padIn.lastInput = CMD_NONE;
     padIn.nextTime = now + padIn.interval;
-    return in;
+    nav.cmd = cmd;
   }
-  return CMD_NONE;
+  return nav;
 }
 
-int InputGamepadNav(double now) {
+Navigator InputGamepadNav(double now) {
   return InputGamepad(navButtonsSize, navButtons, now);
 }
 
@@ -291,9 +300,10 @@ void InputMouseMenu(double now, Vector2 point) {
     }
   }
 
-  int cmd = InputMouse(2, menu->arrowRects, now, point);
-  if (cmd != CMD_NONE) {
-    NavigateMenu(cmd, now);
+  Navigator nav = {0};
+  nav.cmd = InputMouse(2, menu->arrowRects, now, point);
+  if (nav.cmd != CMD_NONE) {
+    NavigateMenu(nav, now);
   }
 
   if (now >= mouseIn.nextTime && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
@@ -323,25 +333,29 @@ static TimedInput keyIn = {
     .lastInput = 0,
 };
 
-int InputKeys(int count, const int *keys, double now) {
+Navigator InputKeys(int count, const int *keys, double now) {
+  Navigator nav = {.cmd = CMD_NONE};
   assert(keys);
   assert(count >= 0);
   for (int i = 0; i < count; i++) {
     if (IsKeyDown(keys[i]) && now >= keyIn.nextTime) {
       keyIn.nextTime = now + keyIn.interval;
-      return i;
+      nav.cmd = i;
+      return nav;
     }
   }
-  return CMD_NONE;
+  return nav;
 }
 
-int InputKeyNav(double now) { return InputKeys(navKeysCount, navKeys, now); }
+Navigator InputKeyNav(double now) {
+  return InputKeys(navKeysCount, navKeys, now);
+}
 
-int InputNav(double now) {
-  int cmd = InputGamepadNav(now);
-  if (cmd == CMD_NONE) {
-    cmd = InputKeyNav(now);
+Navigator InputNav(double now) {
+  Navigator nav = InputGamepadNav(now);
+  if (nav.cmd == CMD_NONE) {
+    nav = InputKeyNav(now);
   }
 
-  return cmd;
+  return nav;
 }
