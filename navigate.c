@@ -12,9 +12,32 @@ const static int navButtons[] = {
 const static int navButtonsSize = sizeof(navButtons) / sizeof(navButtons[0]);
 
 const static int navKeys[] = {
-    KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN, KEY_ENTER, KEY_ESCAPE,
+    KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN, KEY_HOME, KEY_BACKSPACE,
 };
 const static int navKeysCount = sizeof(navKeys) / sizeof(navKeys[0]);
+
+static Menu *menuStack[MENU_STACK_SIZE] = {0};
+static int menuStackTop = -1;
+
+Menu *MenuTop() {
+  menuStackTop = 0;
+  return menuStack[menuStackTop];
+}
+
+Menu *CurrentMenu() { return menuStack[menuStackTop]; }
+
+Menu *PopMenu() {
+  int i = menuStackTop;
+  if (menuStackTop > 0)
+    --menuStackTop;
+  return menuStack[i];
+}
+
+void PushMenu(Menu *menu) {
+  if (menuStackTop < MENU_STACK_SIZE - 1)
+    ++menuStackTop;
+  menuStack[menuStackTop] = menu;
+}
 
 bool PointInRect(Vector2 point, Rectangle rect) {
   return (point.x >= rect.x && point.x < rect.x + rect.width) &&
@@ -23,8 +46,10 @@ bool PointInRect(Vector2 point, Rectangle rect) {
 
 void DrawItemValue(MenuItem *item, int x, int y, int fontSize, Color color) {
   switch (item->itemType) {
-  case MENU_SUB:
+  case MENU_SUB: {
+    DrawText(item->label, x, y, fontSize, color);
     break;
+  }
   case MENU_CHOICE: {
     const char *choice = item->choices[item->choiceCurrent];
     if (item->choices) {
@@ -56,81 +81,83 @@ void DrawArrows(Menu *menu, Theme *theme, float scale, Vector2 point) {
                 0.0f, scale, (isHovered) ? hover : dim);
 }
 
-void DrawMenu(Menu *menu, Theme *theme, Vector2 position, Vector2 point) {
-  assert(menu);
-  assert(menu->items);
-  assert(menu->itemCount >= 0);
+void DrawMenu(Theme *theme, Vector2 position, Vector2 point) {
+  Menu *menu = CurrentMenu();
   assert(theme);
 
-  int fontSize = theme->fontSize;
+  float fontSize = theme->fontSize;
   int lineHeight = fontSize + fontSize / 2;
   int baseX = position.x + theme->padding;
   int baseY = position.y + theme->padding;
 
-  int y = baseY + fontSize + fontSize / 3;
   float scale = fontSize / 24.0f;
   float arrowWidth = theme->leftArrow.width * scale;
   float arrowHeight = theme->leftArrow.height * scale;
 
-  DrawRectangleRounded(
-      (Rectangle){.x = position.x,
-                  .y = position.y,
-                  .width = (2 * theme->valueColumn * fontSize) +
-                           (2 * theme->padding) + (2 * fontSize),
-                  .height =
-                      (menu->itemCount + 1) * lineHeight + 2 * theme->padding},
-      .25f, 8, (Color){.a = 96, .r = 11, .g = 127, .b = 127});
+  Rectangle panel = (Rectangle){.x = position.x,
+                                .y = position.y,
+                                .width = (2 * theme->valueColumn * fontSize) +
+                                         (2 * theme->padding) + (2 * fontSize),
+                                .height = (menu->itemCount + 1) * lineHeight +
+                                          2 * theme->padding};
 
-  DrawText(menu->title, baseX, baseY, fontSize, theme->titleColor);
+  DrawRectangleRounded(panel, .25f, 8,
+                       (Color){.a = 96, .r = 11, .g = 127, .b = 127});
 
-  for (int i = 0; i < menu->itemCount; i++, y += lineHeight) {
-    MenuItem *item = menu->items[i];
+  float titleLength = (float)MeasureText(menu->title, fontSize);
+  DrawText(menu->title, panel.width / 2 - titleLength / 2, baseY, fontSize,
+           theme->titleColor);
+
+  float row = baseY + fontSize + fontSize / 3;
+  for (int itemIndex = 0; itemIndex < menu->itemCount;
+       itemIndex++, row += lineHeight) {
+    MenuItem *item = menu->items[itemIndex];
 
     // draw label
-    int x = baseX + 2 * fontSize;
-    DrawText(item->label, x, y, fontSize,
-             (i == menu->current)     ? theme->labelActive
-             : (i == menu->hoverItem) ? theme->labelHover
-                                      : theme->labelColor);
+    float col = baseX;
+    DrawText(item->label, col, row, fontSize,
+             (itemIndex == menu->current)     ? theme->labelActive
+             : (itemIndex == menu->hoverItem) ? theme->labelHover
+                                              : theme->labelColor);
     // calculate item size and position
-    item->rect.x = x;
-    item->rect.y = y;
+    item->rect.x = col;
+    item->rect.y = row;
     item->rect.height = fontSize;
-    x = baseX + theme->valueColumn * fontSize;
-    item->rect.width = x - item->rect.x;
+    col = baseX + theme->valueColumn * fontSize;
+    item->rect.width = col - item->rect.x;
     item->rect.width += theme->valueColumn * fontSize;
 
     // default color when not active or hovered
     Color color = theme->valueColor;
-    if (i == menu->current) {
+    if (itemIndex == menu->current) {
       color = theme->valueActive;
 
       // calculate size and positon of arrows
       menu->arrowRects[ARROW_LEFT].y = menu->arrowRects[ARROW_RIGHT].y =
-          item->rect.y - (float)fontSize / 4.0f;
+          item->rect.y - fontSize / 4.0f;
       menu->arrowRects[ARROW_LEFT].width = menu->arrowRects[ARROW_RIGHT].width =
           arrowWidth;
       menu->arrowRects[ARROW_LEFT].height =
           menu->arrowRects[ARROW_RIGHT].height = arrowHeight;
-      menu->arrowRects[ARROW_LEFT].x = x - (theme->leftArrow.width * scale + 8);
-      menu->arrowRects[ARROW_RIGHT].x = x + theme->valueColumn * fontSize;
+      menu->arrowRects[ARROW_LEFT].x =
+          col - (theme->leftArrow.width * scale + 8);
+      menu->arrowRects[ARROW_RIGHT].x = col + theme->valueColumn * fontSize;
 
       // draw arrows for the active item
       DrawArrows(menu, theme, scale, point);
-    } else if (i == menu->hoverItem) {
+    } else if (itemIndex == menu->hoverItem) {
       color = theme->valueHover;
     }
 
-    DrawItemValue(item, x + theme->valueColumn, y, fontSize, color);
+    DrawItemValue(item, col + theme->valueColumn, row, fontSize, color);
   }
 }
 
-void NavigateMenu(int cmd, Menu *menu, double now) {
+void NavigateMenu(int cmd, double now) {
   if (CMD_NONE == cmd) {
     return;
   }
-
-  assert(menu);
+  Menu *menu = CurrentMenu();
   MenuItem *item = menu->items[menu->current];
   assert(item);
 
@@ -138,8 +165,15 @@ void NavigateMenu(int cmd, Menu *menu, double now) {
   case NAV_LEFT:
   case NAV_RIGHT:
     switch (item->itemType) {
-    case MENU_SUB:
+    case MENU_SUB: {
+      menu = item->menu;
+      menu->title = item->label;
+      PushMenu(item->menu);
+      if (item->onPush) {
+        item->onPush(menu);
+      }
       break;
+    }
     case MENU_CHOICE:
       item->choiceCurrent += (cmd == NAV_RIGHT) ? 1 : -1;
       item->choiceCurrent = CLAMPNUM(item->choiceCurrent, 0, item->choiceCount);
@@ -162,9 +196,10 @@ void NavigateMenu(int cmd, Menu *menu, double now) {
     menu->current += (cmd == NAV_DOWN) ? 1 : -1;
     menu->current = CLAMPNUM(menu->current, 0, menu->itemCount);
     break;
-  case NAV_SELECT:
+  case NAV_HOME:
     break;
-  case NAV_ESCAPE:
+  case NAV_BACK:
+    PopMenu();
     break;
   }
 }
@@ -240,7 +275,8 @@ int InputMouse(int count, const Rectangle *rects, double now,
   return CMD_NONE;
 }
 
-void InputMouseMenu(Menu *menu, double now, Vector2 point) {
+void InputMouseMenu(double now, Vector2 point) {
+  Menu *menu = CurrentMenu();
   menu->hoverItem = -1;
 
   for (int i = 0; i < menu->itemCount; i++) {
@@ -257,7 +293,7 @@ void InputMouseMenu(Menu *menu, double now, Vector2 point) {
 
   int cmd = InputMouse(2, menu->arrowRects, now, point);
   if (cmd != CMD_NONE) {
-    NavigateMenu(cmd, menu, now);
+    NavigateMenu(cmd, now);
   }
 
   if (now >= mouseIn.nextTime && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {

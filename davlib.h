@@ -18,17 +18,18 @@ typedef struct Pad {
 
 typedef struct Theme {
   Color titleColor;
-  Color labelColor;
-  Color valueColor;
   Color titleActive;
-  Color labelActive;
-  Color valueActive;
   Color titleHover;
+  Color labelColor;
+  Color labelActive;
   Color labelHover;
+  Color valueColor;
+  Color valueActive;
   Color valueHover;
   Color backgroundColor;
   Color colorDim;
   Color colorHover;
+
   Texture2D leftArrow;
   Texture2D rightArrow;
   Texture2D inArrow;
@@ -37,7 +38,7 @@ typedef struct Theme {
   Texture2D menuActivePic;
   int fontSize;
   int padding;
-  int valueColumn;
+  float valueColumn;
 } Theme;
 
 typedef enum MenuItemType {
@@ -52,11 +53,12 @@ struct Menu;
 typedef struct MenuItem {
   const char *label;
   MenuItemType itemType;
+  void (*onChoose)(struct Menu *);
+  Rectangle rect;
   union {
     struct {
       struct Menu *menu;
-      int itemCurrent;
-      int itemCount;
+      void (*onPush)(struct Menu *);
     };
     struct {
       char **choices;
@@ -76,8 +78,6 @@ typedef struct MenuItem {
       int iinc;
     };
   };
-  void (*onChoose)(void *);
-  Rectangle rect;
 } MenuItem;
 
 typedef enum ArrowDirection {
@@ -85,16 +85,15 @@ typedef enum ArrowDirection {
   ARROW_RIGHT,
 } ArrowDirection;
 
+#define MENU_STACK_SIZE 8
+
 typedef struct Menu {
-  // Vector2 mousePos;
-  // Position position;
   const char *title;
   MenuItem **items;
-  // Theme *theme;
-  void *custom; // passed to onChoose in MenuItem
+  void *data;
 
+  // calculated
   Rectangle arrowRects[2];
-
   int current;
   int hoverItem;
   int itemCount;
@@ -170,8 +169,8 @@ typedef enum NavCmd {
   NAV_RIGHT,
   NAV_UP,
   NAV_DOWN,
-  NAV_SELECT,
-  NAV_ESCAPE,
+  NAV_HOME,
+  NAV_BACK,
 } NavCmd;
 
 typedef struct MeshShape {
@@ -276,13 +275,18 @@ Vector3 KeysToVector(Vector3 vec, Vector3 base, float scale);
 
 // mouse
 int InputMouse(int count, const Rectangle *rects, double now, Vector2 mousePos);
-void InputMouseMenu(Menu *menu, double now, Vector2 point);
 
 void DrawShapes(int count, Shape *shapes[]);
 void InitShapes(int count, Shape *shapes[], Material material);
 
-void DrawMenu(Menu *menu, Theme *theme, Vector2 position, Vector2 point);
-void NavigateMenu(int cmd, Menu *menu, double now);
+void InputMouseMenu(double now, Vector2 point);
+void DrawMenu(Theme *theme, Vector2 position, Vector2 point);
+void NavigateMenu(int cmd, double now);
+
+Menu *CurrentMenu();
+Menu *MenuTop();
+Menu *PopMenu();
+void PushMenu(Menu *menu);
 
 void print_vectors(const int count, ...);
 
