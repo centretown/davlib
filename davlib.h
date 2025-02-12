@@ -33,8 +33,8 @@ typedef struct Theme {
   Texture2D rightArrow;
   Texture2D inArrow;
   Texture2D outArrow;
-  Texture2D menuInactivePic;
-  Texture2D menuActivePic;
+  Texture2D menuInactive;
+  Texture2D menuActive;
   int fontSize;
   int padding;
   float valueColumn;
@@ -82,7 +82,29 @@ typedef struct MenuItem {
 typedef enum ArrowDirection {
   ARROW_LEFT,
   ARROW_RIGHT,
+  ARROW_UP,
+  ARROW_DOWN,
+  ARROW_HOME,
+  ARROW_BACK,
+  ARROW_COUNT,
 } ArrowDirection;
+
+#define CMD_NONE -1
+
+typedef enum NavCmd {
+  NAV_LEFT,
+  NAV_RIGHT,
+  NAV_UP,
+  NAV_DOWN,
+  NAV_HOME,
+  NAV_BACK,
+  NAV_COUNT,
+} NavCmd;
+
+typedef struct Navigator {
+  NavCmd cmd;
+  float ratio;
+} Navigator;
 
 #define MENU_STACK_SIZE 8
 
@@ -92,7 +114,6 @@ typedef struct Menu {
   void *data;
 
   // calculated
-  Rectangle arrowRects[2];
   int current;
   int hoverItem;
   int itemCount;
@@ -161,21 +182,6 @@ typedef struct CapsuleShape {
   Color color;
 } CapsuleShape;
 
-#define CMD_NONE -1
-
-typedef enum NavCmd {
-  NAV_LEFT = 0,
-  NAV_RIGHT,
-  NAV_UP,
-  NAV_DOWN,
-  NAV_HOME,
-  NAV_BACK,
-} NavCmd;
-
-typedef struct Navigator {
-  NavCmd cmd;
-  float ratio;
-} Navigator;
 
 typedef struct MeshShape {
   Mesh mesh;
@@ -255,11 +261,21 @@ typedef struct MeshCubicmap {
   Vector3 cubeSize;
 } MeshCubicmap;
 
+typedef struct TimedInput {
+  double interval;
+  double lastTime; // when last input set
+  double nextTime; // when last input set
+  int lastInput;   // set to 0 after interval
+} TimedInput;
+
+
 #define CLAMPNUM(num, lo, hi) ((num >= hi) ? lo : (num < lo) ? hi - 1 : num)
 #define VEC3_NULL ((Vector3){0})
 #define IS_VEC3_EQUAL(v, u) ((v.x == u.x) && (v.y == u.y) && (v.z == u.z))
 
-Navigator InputNav(double now);
+Navigator InputNav(double now, Vector2 point);
+int InputMouse(int count, const Rectangle *rects, double now,
+                     Vector2 mousePos);
 
 // gamepad
 bool IsGamePadValid(int pad);
@@ -279,11 +295,13 @@ Vector3 KeysToVector(Vector3 vec, Vector3 base, float scale);
 
 // mouse
 int InputMouse(int count, const Rectangle *rects, double now, Vector2 mousePos);
+Navigator InputMouseNav(double now, Vector2 point);
+bool InputMouseButton(Rectangle rect, double now, Vector2 point);
+bool InputMouseMenu(double now, Vector2 point);
 
 void DrawShapes(int count, Shape *shapes[]);
 void InitShapes(int count, Shape *shapes[], Material material);
 
-void InputMouseMenu(double now, Vector2 point);
 void DrawMenu(Theme *theme, Vector2 position, Vector2 point);
 void NavigateMenu(Navigator nav, double now);
 
@@ -304,37 +322,32 @@ void OnSetColorRed(Menu *menuptr);
 void OnSetColorGreen(Menu *menuptr);
 void OnSetColorBlue(Menu *menuptr);
 void OnSetColorAlpha(Menu *menuptr);
-void OnPushTitleColor(Menu*menuptr);
-void OnPushPanelColor(Menu*menuptr);
-void OnPushTitleHover(Menu*menuptr);
-void OnPushLabelColor(Menu*menuptr);
-void OnPushLabelActive(Menu*menuptr);
-void OnPushLabelHover(Menu*menuptr);
-void OnPushValueColor(Menu*menuptr);
-void OnPushValueActive(Menu*menuptr);
-void OnPushValueHover(Menu*menuptr);
-void OnPushBackgroundColor(Menu*menuptr);
-void OnPushColorDim(Menu*menuptr);
-void OnPushColorHover(Menu*menuptr);
+void OnPushTitleColor(Menu *menuptr);
+void OnPushPanelColor(Menu *menuptr);
+void OnPushTitleHover(Menu *menuptr);
+void OnPushLabelColor(Menu *menuptr);
+void OnPushLabelActive(Menu *menuptr);
+void OnPushLabelHover(Menu *menuptr);
+void OnPushValueColor(Menu *menuptr);
+void OnPushValueActive(Menu *menuptr);
+void OnPushValueHover(Menu *menuptr);
+void OnPushBackgroundColor(Menu *menuptr);
+void OnPushColorDim(Menu *menuptr);
+void OnPushColorHover(Menu *menuptr);
 
 // OnChoose Handler Macros
-#include <assert.h>
 #define MENU_ITEM_CHOICE(menuptr)                                              \
-  assert(menuptr);                                                             \
   Menu *menu = menuptr;                                                        \
   MenuItem *item = menu->items[menu->current];                                 \
   int choiceCurrent = item->choiceCurrent;
 
 #define MENU_ITEM_FLOAT(menuptr)                                               \
-  assert(menuptr);                                                             \
   Menu *menu = menuptr;                                                        \
   MenuItem *item = menu->items[menu->current];                                 \
   float value = item->fvalue;
 
 #define MENU_ITEM_INT(menuptr)                                                 \
-  assert(menuptr);                                                             \
   Menu *menu = menuptr;                                                        \
-  assert(menu);                                                                \
   MenuItem *item = menu->items[menu->current];                                 \
   int value = item->ivalue;
 
@@ -372,10 +385,11 @@ void print_vectors(const int count, ...) {
 
 #include "gamepad.c"
 #include "keyboard.c"
+#include "menus.c"
 #include "mesh.c"
 #include "navigate.c"
 #include "shape.c"
-#include "menus.c"
+#include "mouse.c"
 
 #endif // DAVLIB_IMPLEMENTATION
 
