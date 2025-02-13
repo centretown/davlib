@@ -48,24 +48,30 @@ void PushMenu(Menu *menu) {
   menuStack[menuStackTop] = menu;
 }
 
-void DrawItemValue(MenuItem *item, int x, int y, int fontSize, Color color) {
+void DrawItemValue(MenuItem *item, Rectangle rect, int fontSize, Color color) {
+  if (item->onDraw) {
+    item->onDraw(item, rect, fontSize, color);
+    return;
+  }
+
   switch (item->itemType) {
   case MENU_SUB: {
-    DrawText(item->label, x, y, fontSize, color);
+    DrawText(item->label, rect.x, rect.y, fontSize, color);
     break;
   }
   case MENU_CHOICE: {
     const char *choice = item->choices[item->choiceCurrent];
     if (item->choices) {
-      DrawText(choice, x, y, fontSize, color);
+      DrawText(choice, rect.x, rect.y, fontSize, color);
     }
     break;
   }
   case MENU_FLOAT:
-    DrawText(TextFormat("%0.1f", item->fvalue), x, y, fontSize, color);
+    DrawText(TextFormat("%0.1f", item->fvalue), rect.x, rect.y, fontSize,
+             color);
     break;
   case MENU_INT:
-    DrawText(TextFormat("%d", item->ivalue), x, y, fontSize, color);
+    DrawText(TextFormat("%d", item->ivalue), rect.x, rect.y, fontSize, color);
     break;
   }
 }
@@ -74,9 +80,8 @@ void DrawPanelHeading(Menu *menu, Theme *theme, float baseX, float baseY,
                       float panelWidth, Vector2 point) {
   float fontSize = theme->fontSize;
   float scale = fontSize / 24.0f;
-  float titleLength = (float)MeasureText(menu->title, fontSize);
   if (!IsTop()) {
-    arrowRects[ARROW_BACK] = (Rectangle){.x = theme->padding,
+    arrowRects[ARROW_BACK] = (Rectangle){.x = baseX,
                                          .y = baseY,
                                          .width = theme->outArrow.width,
                                          .height = theme->outArrow.height};
@@ -85,12 +90,11 @@ void DrawPanelHeading(Menu *menu, Theme *theme, float baseX, float baseY,
                   (Vector2){arrowRects[ARROW_BACK].x, arrowRects[ARROW_BACK].y},
                   0.0f, scale,
                   (isHovered) ? theme->colorHover : theme->colorDim);
-  } else {
-    arrowRects[ARROW_BACK] = (Rectangle){0};
   }
 
-  DrawText(menu->title, panelWidth / 2 - titleLength / 2, baseY, fontSize,
-           theme->titleColor);
+  float titleLength = (float)MeasureText(menu->title, fontSize);
+  DrawText(menu->title, baseX + panelWidth / 2 - titleLength / 2, baseY,
+           fontSize, theme->titleColor);
 }
 
 void DrawArrows(Menu *menu, MenuItem *item, Theme *theme, int col,
@@ -111,24 +115,35 @@ void DrawArrows(Menu *menu, MenuItem *item, Theme *theme, int col,
   // arrowRects[ARROW_LEFT].x = col - (theme->leftArrow.width * scale + 8);
   arrowRects[ARROW_RIGHT].x = col + theme->valueColumn * fontSize;
 
-  bool isHovered = PointInRect(point, arrowRects[ARROW_LEFT]);
-  DrawTextureEx(theme->leftArrow,
-                (Vector2){arrowRects[ARROW_LEFT].x, arrowRects[ARROW_LEFT].y},
-                0.0f, scale, (isHovered) ? hover : dim);
-  isHovered = PointInRect(point, arrowRects[ARROW_RIGHT]);
-  DrawTextureEx(theme->rightArrow,
-                (Vector2){arrowRects[ARROW_RIGHT].x, arrowRects[ARROW_RIGHT].y},
-                0.0f, scale, (isHovered) ? hover : dim);
+  bool leftHovered = PointInRect(point, arrowRects[ARROW_LEFT]);
+  bool rightHovered = PointInRect(point, arrowRects[ARROW_RIGHT]);
+  if (item->itemType == MENU_SUB) {
+    DrawTextureEx(theme->rightArrow,
+                  (Vector2){arrowRects[ARROW_LEFT].x, arrowRects[ARROW_LEFT].y},
+                  0.0f, scale, (leftHovered) ? hover : dim);
+    DrawTextureEx(
+        theme->leftArrow,
+        (Vector2){arrowRects[ARROW_RIGHT].x, arrowRects[ARROW_RIGHT].y}, 0.0f,
+        scale, (rightHovered) ? hover : dim);
+  } else {
+    DrawTextureEx(theme->leftArrow,
+                  (Vector2){arrowRects[ARROW_LEFT].x, arrowRects[ARROW_LEFT].y},
+                  0.0f, scale, (leftHovered) ? hover : dim);
+    DrawTextureEx(
+        theme->rightArrow,
+        (Vector2){arrowRects[ARROW_RIGHT].x, arrowRects[ARROW_RIGHT].y}, 0.0f,
+        scale, (rightHovered) ? hover : dim);
+  }
 }
 
 static float roundnessFactor = 0.075f;
 static int roundnessSegments = 8;
 
 void DrawMenu(Theme *theme, Vector2 position, Vector2 point) {
-  ResetArrows();
   Menu *menu = CurrentMenu();
   assert(theme);
 
+  ResetArrows();
   float fontSize = theme->fontSize;
   float lineHeight = fontSize + fontSize / 2;
   float baseX = position.x + theme->padding;
@@ -178,7 +193,12 @@ void DrawMenu(Theme *theme, Vector2 position, Vector2 point) {
       color = theme->valueHover;
     }
 
-    DrawItemValue(item, col + theme->valueColumn, row, fontSize, color);
+    DrawItemValue(item,
+                  (Rectangle){.x = col + theme->valueColumn,
+                              .y = row,
+                              .width = (theme->valueColumn - 1) * fontSize,
+                              .height = fontSize},
+                  fontSize, color);
   }
 }
 
@@ -198,6 +218,7 @@ void NavigateMenu(Navigator nav, double now) {
     case MENU_SUB: {
       menu = item->menu;
       menu->title = item->label;
+      menu->data = item->data;
       PushMenu(item->menu);
       if (item->onPush) {
         item->onPush(menu);
@@ -298,9 +319,8 @@ Navigator InputKeyNav(double now) {
 
 Navigator InputNav(double now, Vector2 point) {
   Navigator nav = (Navigator){.cmd = CMD_NONE};
-  if (InputMouseMenu(now, point)) {
-    // return nav;
-  }
+  // left arrow is inside item.rect
+  InputMouseMenu(point);
   nav = InputMouseNav(now, point);
   if (nav.cmd == CMD_NONE) {
     nav = InputGamepadNav(now);

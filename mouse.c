@@ -47,16 +47,14 @@ int InputMouse(int count, const Rectangle *rects, double now,
   return CMD_NONE;
 }
 
-bool InputMouseMenu(double now, Vector2 point) {
+bool InputMouseMenu(Vector2 point) {
   Menu *menu = CurrentMenu();
 
   for (int i = 0; i < menu->itemCount; i++) {
     MenuItem *item = menu->items[i];
     // contained?
     if (PointInRect(point, item->rect)) {
-      // if (now >= mouseIn.nextTime && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
       if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-        // mouseIn.nextTime = now + mouseIn.interval;
         menu->current = i;
       }
       menu->hoverItem = i;
