@@ -4,14 +4,14 @@
 
 Theme *DAV_theme = &(Theme){
     .backgroundColor = BLACK,
-    .panelColor = (Color){.r = 11, .g = 23, .b = 15, .a = 240},
-    .titleColor = (Color){.r = 0x00, .g = 0xf0, .b = 0x30, .a = 0xcf},
-    .labelColor = (Color){.r = 0x00, .g = 0x89, .b = 0x79, .a = 0xcf},
-    .valueColor = (Color){.r = 0x7b, .g = 0x4f, .b = 0x13, .a = 0xcf},
-    .labelHover = (Color){.r = 0x89, .g = 0x89, .b = 0x79, .a = 0xef},
-    .valueHover = (Color){.r = 0x7b, .g = 0x4f, .b = 0x13, .a = 0xef},
-    .labelActive = (Color){.r = 0x00, .g = 0x89, .b = 0x79, .a = 0xff},
-    .valueActive = (Color){.r = 0xcb, .g = 0x7f, .b = 0x13, .a = 0xff},
+    .panelColor = (Color){.r = 0, .g = 12, .b = 15, .a = 240},
+    .titleColor = (Color){.r = 255, .g = 200, .b = 0, .a = 255},
+    .labelColor = (Color){.r = 0, .g = 97, .b = 87, .a = 255},
+    .labelHover = (Color){.r = 0, .g = 157, .b = 142, .a = 255},
+    .labelActive = (Color){.r = 0, .g = 247, .b = 227, .a = 255},
+    .valueColor = (Color){.r = 137, .g = 127, .b = 0, .a = 255},
+    .valueHover = (Color){.r = 177, .g = 167, .b = 0, .a = 255},
+    .valueActive = (Color){.r = 217, .g = 207, .b = 0, .a = 255},
     .colorDim = (Color){.r = 127, .g = 127, .b = 0, .a = 255},
     .colorHover = (Color){.r = 255, .g = 255, .b = 0, .a = 255},
     .fontSize = 24,
@@ -101,10 +101,10 @@ void SetColorItems(Menu *menu) {
 }
 
 #include <assert.h>
-void OnDrawDisplayColor(MenuItem *item) {
+void OnDrawDisplayColor(MenuItem *item, Theme *theme, Rectangle rect) {
   Color *color = item->data;
   if (item->itemType == MENU_DISPLAY) {
-    DrawRectangleRounded(item->rect, .75f, 8, *color);
+    DrawRectangleRounded(rect, .75f, 16, *color);
   }
 }
 
@@ -236,98 +236,104 @@ Menu *DAV_cubeMenu = &(Menu){
     .items = DAV_cubeItems,
 };
 
-MenuItem *DAV_themeItems[] = {&(MenuItem){
-                                  .itemType = MENU_CHOICE,
-                                  .label = "Font Size",
-                                  .choices =
-                                      (char *[]){
-                                          "24",
-                                          "32",
-                                          "40",
-                                          "48",
-                                          "56",
-                                          "20",
-                                      },
-                                  .choiceCount = 6,
-                                  .onChoose = OnChooseFont,
-                              },
-                              &(MenuItem){
-                                  .itemType = MENU_SUB,
-                                  .label = "Background Color",
-                                  .menu = &DAV_colorMenuTemplate,
-                                  .onDraw = OnDrawColorBox,
-                                  .onPush = SetColorItems,
-                              },
-                              &(MenuItem){
-                                  .itemType = MENU_SUB,
-                                  .label = "Panel Color",
-                                  .menu = &DAV_colorMenuTemplate,
-                                  .onDraw = OnDrawColorBox,
-                                  .onPush = SetColorItems,
-                              },
-                              &(MenuItem){
-                                  .itemType = MENU_SUB,
-                                  .label = "Title Color",
-                                  .menu = &DAV_colorMenuTemplate,
-                                  .onDraw = OnDrawColorBox,
-                                  .onPush = SetColorItems,
-                              },
-                              &(MenuItem){
-                                  .itemType = MENU_SUB,
-                                  .label = "Label Color",
-                                  .menu = &DAV_colorMenuTemplate,
-                                  .onDraw = OnDrawColorBox,
-                                  .onPush = SetColorItems,
-                              },
-                              &(MenuItem){
-                                  .itemType = MENU_SUB,
-                                  .label = "Label Active",
-                                  .menu = &DAV_colorMenuTemplate,
-                                  .onDraw = OnDrawColorBox,
-                                  .onPush = SetColorItems,
-                              },
-                              &(MenuItem){
-                                  .itemType = MENU_SUB,
-                                  .label = "Label Hover",
-                                  .menu = &DAV_colorMenuTemplate,
-                                  .onDraw = OnDrawColorBox,
-                                  .onPush = SetColorItems,
-                              },
-                              &(MenuItem){
-                                  .itemType = MENU_SUB,
-                                  .label = "Value Color",
-                                  .menu = &DAV_colorMenuTemplate,
-                                  .onDraw = OnDrawColorBox,
-                                  .onPush = SetColorItems,
-                              },
-                              &(MenuItem){
-                                  .itemType = MENU_SUB,
-                                  .label = "Value Active",
-                                  .menu = &DAV_colorMenuTemplate,
-                                  .onDraw = OnDrawColorBox,
-                                  .onPush = SetColorItems,
-                              },
-                              &(MenuItem){
-                                  .itemType = MENU_SUB,
-                                  .label = "Value Hover",
-                                  .menu = &DAV_colorMenuTemplate,
-                                  .onDraw = OnDrawColorBox,
-                                  .onPush = SetColorItems,
-                              },
-                              &(MenuItem){
-                                  .itemType = MENU_SUB,
-                                  .label = "Arrow Dim",
-                                  .menu = &DAV_colorMenuTemplate,
-                                  .onDraw = OnDrawColorBox,
-                                  .onPush = SetColorItems,
-                              },
-                              &(MenuItem){
-                                  .itemType = MENU_SUB,
-                                  .label = "Arrow Hover",
-                                  .menu = &DAV_colorMenuTemplate,
-                                  .onDraw = OnDrawColorBox,
-                                  .onPush = SetColorItems,
-                              }};
+MenuItem *DAV_themeItems[] = {
+    // comment here for formatting
+    &(MenuItem){
+        .itemType = MENU_CHOICE,
+        .label = "Font Size",
+        .choices =
+            (char *[]){
+                "24",
+                "28",
+                "32",
+                "36",
+                "40",
+                "44",
+                "48",
+                "56",
+                "16",
+                "20",
+            },
+        .choiceCount = 10,
+        .onChoose = OnChooseFont,
+    },
+    &(MenuItem){
+        .itemType = MENU_SUB,
+        .label = "Background Color",
+        .menu = &DAV_colorMenuTemplate,
+        .onDraw = OnDrawColorBox,
+        .onPush = SetColorItems,
+    },
+    &(MenuItem){
+        .itemType = MENU_SUB,
+        .label = "Panel Color",
+        .menu = &DAV_colorMenuTemplate,
+        .onDraw = OnDrawColorBox,
+        .onPush = SetColorItems,
+    },
+    &(MenuItem){
+        .itemType = MENU_SUB,
+        .label = "Title Color",
+        .menu = &DAV_colorMenuTemplate,
+        .onDraw = OnDrawColorBox,
+        .onPush = SetColorItems,
+    },
+    &(MenuItem){
+        .itemType = MENU_SUB,
+        .label = "Label Color",
+        .menu = &DAV_colorMenuTemplate,
+        .onDraw = OnDrawColorBox,
+        .onPush = SetColorItems,
+    },
+    &(MenuItem){
+        .itemType = MENU_SUB,
+        .label = "Label Active",
+        .menu = &DAV_colorMenuTemplate,
+        .onDraw = OnDrawColorBox,
+        .onPush = SetColorItems,
+    },
+    &(MenuItem){
+        .itemType = MENU_SUB,
+        .label = "Label Hover",
+        .menu = &DAV_colorMenuTemplate,
+        .onDraw = OnDrawColorBox,
+        .onPush = SetColorItems,
+    },
+    &(MenuItem){
+        .itemType = MENU_SUB,
+        .label = "Value Color",
+        .menu = &DAV_colorMenuTemplate,
+        .onDraw = OnDrawColorBox,
+        .onPush = SetColorItems,
+    },
+    &(MenuItem){
+        .itemType = MENU_SUB,
+        .label = "Value Active",
+        .menu = &DAV_colorMenuTemplate,
+        .onDraw = OnDrawColorBox,
+        .onPush = SetColorItems,
+    },
+    &(MenuItem){
+        .itemType = MENU_SUB,
+        .label = "Value Hover",
+        .menu = &DAV_colorMenuTemplate,
+        .onDraw = OnDrawColorBox,
+        .onPush = SetColorItems,
+    },
+    &(MenuItem){
+        .itemType = MENU_SUB,
+        .label = "Arrow Dim",
+        .menu = &DAV_colorMenuTemplate,
+        .onDraw = OnDrawColorBox,
+        .onPush = SetColorItems,
+    },
+    &(MenuItem){
+        .itemType = MENU_SUB,
+        .label = "Arrow Hover",
+        .menu = &DAV_colorMenuTemplate,
+        .onDraw = OnDrawColorBox,
+        .onPush = SetColorItems,
+    }};
 
 Menu *DAV_themeMenu = &(Menu){
     .title = "Theme",

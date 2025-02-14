@@ -43,18 +43,18 @@ typedef struct Theme {
 } Theme;
 
 typedef enum VectorItemId {
-    VECTOR_X,
-    VECTOR_Y,
-    VECTOR_Z,
-    VECTOR_W,
-}Vector3ItemId;
+  VECTOR_X,
+  VECTOR_Y,
+  VECTOR_Z,
+  VECTOR_W,
+} Vector3ItemId;
 typedef enum ColorItemId {
-    COLOR_ITEM_DISPLAY,
-    COLOR_ITEM_RED,
-    COLOR_ITEM_GREEN,
-    COLOR_ITEM_BLUE,
-    COLOR_ITEM_ALPHA,
-}ColorItemId ;
+  COLOR_ITEM_DISPLAY,
+  COLOR_ITEM_RED,
+  COLOR_ITEM_GREEN,
+  COLOR_ITEM_BLUE,
+  COLOR_ITEM_ALPHA,
+} ColorItemId;
 
 typedef enum MenuItemType {
   MENU_SUB,
@@ -97,7 +97,7 @@ typedef struct MenuItem {
       int iinc;
     };
     struct {
-        void (*onDisplay)(struct MenuItem *);
+      void (*onDisplay)(struct MenuItem *, Theme *theme, Rectangle rect);
     };
   };
 } MenuItem;
@@ -290,6 +290,22 @@ typedef struct TimedInput {
   int lastInput;   // set to 0 after interval
 } TimedInput;
 
+typedef struct DrawLayout {
+  Menu *menu;
+  float scale;
+  float padding;
+  float lineHeight;
+  float roundness;
+  float columnWidth;
+  Rectangle panel;
+  float baseX;
+  float baseY;
+  float titleX;
+  float titleY;
+  float lineY;
+  Rectangle input;
+} DrawLayout;
+
 #define CLAMPNUM(num, lo, hi) ((num >= hi) ? lo : (num < lo) ? hi - 1 : num)
 #define VEC3_NULL ((Vector3){0})
 #define IS_VEC3_EQUAL(v, u) ((v.x == u.x) && (v.y == u.y) && (v.z == u.z))
@@ -322,6 +338,8 @@ bool InputMouseMenu(Vector2 point);
 void DrawShapes(int count, Shape *shapes[]);
 void InitShapes(int count, Shape *shapes[], Material material);
 
+void LayoutMenu(DrawLayout *layout, Theme *theme, Vector2 position,
+                Vector2 point);
 void DrawMenu(Theme *theme, Vector2 position, Vector2 point);
 void NavigateMenu(Navigator nav, double now);
 
@@ -382,6 +400,7 @@ void print_vectors(const int count, ...) {
   printf("\n");
 }
 
+#include "draw.c"
 #include "gamepad.c"
 #include "keyboard.c"
 #include "menus.c"
