@@ -73,6 +73,11 @@ void DrawItemValue(MenuItem *item, Rectangle rect, int fontSize, Color color) {
   case MENU_INT:
     DrawText(TextFormat("%d", item->ivalue), rect.x, rect.y, fontSize, color);
     break;
+  case MENU_DISPLAY:
+    if (item->onDisplay) {
+      item->onDisplay(item);
+    }
+    break;
   }
 }
 
@@ -81,10 +86,11 @@ void DrawPanelHeading(Menu *menu, Theme *theme, float baseX, float baseY,
   float fontSize = theme->fontSize;
   float scale = fontSize / 24.0f;
   if (!IsTop()) {
-    arrowRects[ARROW_BACK] = (Rectangle){.x = baseX,
-                                         .y = baseY,
-                                         .width = theme->outArrow.width,
-                                         .height = theme->outArrow.height};
+    arrowRects[ARROW_BACK] =
+        (Rectangle){.x = baseX,
+                    .y = baseY - (float)theme->padding / 2.0f,
+                    .width = theme->outArrow.width,
+                    .height = theme->outArrow.height};
     bool isHovered = PointInRect(point, arrowRects[ARROW_BACK]);
     DrawTextureEx(theme->outArrow,
                   (Vector2){arrowRects[ARROW_BACK].x, arrowRects[ARROW_BACK].y},
@@ -95,10 +101,16 @@ void DrawPanelHeading(Menu *menu, Theme *theme, float baseX, float baseY,
   float titleLength = (float)MeasureText(menu->title, fontSize);
   DrawText(menu->title, baseX + panelWidth / 2 - titleLength / 2, baseY,
            fontSize, theme->titleColor);
+  int y = baseY + fontSize + (float)theme->padding / 2;
+  DrawLine(baseX, y, baseX + panelWidth - 2.0f * (float)theme->padding, y,
+           theme->titleColor);
 }
 
 void DrawArrows(Menu *menu, MenuItem *item, Theme *theme, int col,
                 Vector2 point) {
+  if (item->itemType == MENU_DISPLAY) {
+    return;
+  }
   Color hover = theme->colorHover;
   Color dim = theme->colorDim;
   float fontSize = theme->fontSize;
@@ -162,6 +174,8 @@ void DrawMenu(Theme *theme, Vector2 position, Vector2 point) {
                                                  : (panel.height / panel.width);
   DrawRectangleRounded(panel, roundness * roundnessFactor, roundnessSegments,
                        theme->panelColor);
+  DrawRectangleRoundedLines(panel, roundness * roundnessFactor,
+                            roundnessSegments, theme->titleColor);
 
   DrawPanelHeading(menu, theme, baseX, baseY, panel.width, point);
 
@@ -237,16 +251,26 @@ void NavigateMenu(Navigator nav, double now) {
       item->ivalue += (cmd == NAV_RIGHT) ? item->iinc : -item->iinc;
       item->ivalue = CLAMPNUM(item->ivalue, item->imin, item->imax);
       break;
+    case MENU_DISPLAY:
+      break;
     }
     if (item->onChoose) {
       item->onChoose(menu);
     }
     break;
   case NAV_UP:
-  case NAV_DOWN:
-    menu->current += (cmd == NAV_DOWN) ? 1 : -1;
-    menu->current = CLAMPNUM(menu->current, 0, menu->itemCount);
+  case NAV_DOWN: {
+    int count = 0;
+    int inc = (cmd == NAV_DOWN) ? 1 : -1;
+    // skip display only items
+    do {
+      menu->current += inc;
+      menu->current = CLAMPNUM(menu->current, 0, menu->itemCount);
+      item = menu->items[menu->current];
+      count++;
+    } while (item->itemType == MENU_DISPLAY && count < menu->itemCount);
     break;
+  }
   case NAV_HOME:
     break;
   case NAV_BACK:

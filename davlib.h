@@ -42,11 +42,26 @@ typedef struct Theme {
   float valueColumn;
 } Theme;
 
+typedef enum VectorItemId {
+    VECTOR_X,
+    VECTOR_Y,
+    VECTOR_Z,
+    VECTOR_W,
+}Vector3ItemId;
+typedef enum ColorItemId {
+    COLOR_ITEM_DISPLAY,
+    COLOR_ITEM_RED,
+    COLOR_ITEM_GREEN,
+    COLOR_ITEM_BLUE,
+    COLOR_ITEM_ALPHA,
+}ColorItemId ;
+
 typedef enum MenuItemType {
   MENU_SUB,
   MENU_CHOICE,
   MENU_FLOAT,
   MENU_INT,
+  MENU_DISPLAY,
 } MenuItemType;
 
 struct Menu;
@@ -80,6 +95,9 @@ typedef struct MenuItem {
       int imin;
       int imax;
       int iinc;
+    };
+    struct {
+        void (*onDisplay)(struct MenuItem *);
     };
   };
 } MenuItem;
@@ -325,18 +343,6 @@ void OnSetColorRed(Menu *menuptr);
 void OnSetColorGreen(Menu *menuptr);
 void OnSetColorBlue(Menu *menuptr);
 void OnSetColorAlpha(Menu *menuptr);
-// void OnPushTitleColor(Menu *menuptr);
-// void OnPushPanelColor(Menu *menuptr);
-// void OnPushTitleHover(Menu *menuptr);
-// void OnPushLabelColor(Menu *menuptr);
-// void OnPushLabelActive(Menu *menuptr);
-// void OnPushLabelHover(Menu *menuptr);
-// void OnPushValueColor(Menu *menuptr);
-// void OnPushValueActive(Menu *menuptr);
-// void OnPushValueHover(Menu *menuptr);
-// void OnPushBackgroundColor(Menu *menuptr);
-// void OnPushColorDim(Menu *menuptr);
-// void OnPushColorHover(Menu *menuptr);
 
 // OnChoose Handler Macros
 #define MENU_ITEM_CHOICE(menuptr)                                              \

@@ -16,7 +16,7 @@ Theme *DAV_theme = &(Theme){
     .colorHover = (Color){.r = 255, .g = 255, .b = 0, .a = 255},
     .fontSize = 24,
     .padding = 24,
-    .valueColumn = 15.0f,
+    .valueColumn = 13.0f,
 };
 
 typedef enum ThemeColorID {
@@ -39,6 +39,25 @@ void OnChooseFont(Menu *menuptr) {
   MENU_ITEM_CHOICE(menuptr);
   DAV_theme->fontSize = atoi(item->choices[choiceCurrent]);
 }
+
+void OnSetVector3X(Menu *menuptr) {
+  MENU_ITEM_FLOAT(menuptr);
+  Vector3 *vector3 = menu->data;
+  vector3->x = value;
+}
+
+void OnSetVector3Y(Menu *menuptr) {
+  MENU_ITEM_FLOAT(menuptr);
+  Vector3 *vector3 = menu->data;
+  vector3->y = value;
+}
+
+void OnSetVector3Z(Menu *menuptr) {
+  MENU_ITEM_FLOAT(menuptr);
+  Vector3 *vector3 = menu->data;
+  vector3->z = value;
+}
+
 void OnSetColorRed(Menu *menuptr) {
   MENU_ITEM_INT(menuptr);
   Color *color = menu->data;
@@ -61,17 +80,34 @@ void OnSetColorAlpha(Menu *menuptr) {
 }
 
 #include <assert.h>
+void SetVector3Items(Menu *menu) {
+  assert(menu->data);
+  Vector3 *vector3 = menu->data;
+  MenuItem **items = menu->items;
+  items[VECTOR_X]->fvalue = vector3->x;
+  items[VECTOR_Y]->fvalue = vector3->y;
+  items[VECTOR_Z]->fvalue = vector3->z;
+}
+
 void SetColorItems(Menu *menu) {
   assert(menu->data);
   Color *color = menu->data;
   MenuItem **items = menu->items;
-  items[0]->ivalue = color->r;
-  items[1]->ivalue = color->g;
-  items[2]->ivalue = color->b;
-  items[3]->ivalue = color->a;
+  items[COLOR_ITEM_DISPLAY]->data = color;
+  items[COLOR_ITEM_RED]->ivalue = color->r;
+  items[COLOR_ITEM_GREEN]->ivalue = color->g;
+  items[COLOR_ITEM_BLUE]->ivalue = color->b;
+  items[COLOR_ITEM_ALPHA]->ivalue = color->a;
 }
 
 #include <assert.h>
+void OnDrawDisplayColor(MenuItem *item) {
+  Color *color = item->data;
+  if (item->itemType == MENU_DISPLAY) {
+    DrawRectangleRounded(item->rect, .75f, 8, *color);
+  }
+}
+
 void OnDrawColorBox(struct MenuItem *item, Rectangle rect, int fontSize,
                     Color color) {
   if (item->itemType == MENU_SUB) {
@@ -84,7 +120,48 @@ void OnDrawColorBox(struct MenuItem *item, Rectangle rect, int fontSize,
   DrawRectangleRounded(rect, .75f, 8, color);
 }
 
+MenuItem *DAV_vector3Items[] = {
+    &(MenuItem){
+        .itemType = MENU_FLOAT,
+        .label = "X Axis",
+        .fvalue = 0,
+        .fmin = 0.0f,
+        .fmax = 1.0f,
+        .finc = .05f,
+        .onChoose = OnSetVector3X,
+    },
+    &(MenuItem){
+        .itemType = MENU_FLOAT,
+        .label = "Y Axis",
+        .fvalue = 0,
+        .fmin = 0.0f,
+        .fmax = 1.0f,
+        .finc = .05f,
+        .onChoose = OnSetVector3Y,
+    },
+    &(MenuItem){
+        .itemType = MENU_FLOAT,
+        .label = "Z Axis",
+        .fvalue = 0,
+        .fmin = 0.0f,
+        .fmax = 1.0f,
+        .finc = .05f,
+        .onChoose = OnSetVector3Z,
+    },
+};
+
+Menu DAV_vector3MenuTemplate = (Menu){
+    .title = "Vector",
+    .current = 0,
+    .itemCount = sizeof(DAV_vector3Items) / sizeof(DAV_vector3Items[0]),
+    .items = DAV_vector3Items,
+};
+
 MenuItem *DAV_colorItems[] = {
+    &(MenuItem){
+        .itemType = MENU_DISPLAY,
+        .onDisplay = OnDrawDisplayColor,
+    },
     &(MenuItem){
         .itemType = MENU_INT,
         .label = "Red",
@@ -125,12 +202,39 @@ MenuItem *DAV_colorItems[] = {
 
 Menu DAV_colorMenuTemplate = (Menu){
     .title = "Colors",
-    .current = 0,
+    .current = 1,
     .itemCount = sizeof(DAV_colorItems) / sizeof(DAV_colorItems[0]),
     .items = DAV_colorItems,
 };
 
-Menu CloneColorMenuTemplate() { return DAV_colorMenuTemplate; }
+MenuItem *DAV_cubeItems[] = {
+    &(MenuItem){
+        .itemType = MENU_SUB,
+        .label = "Position",
+        .menu = &DAV_vector3MenuTemplate,
+        .onPush = SetVector3Items,
+    },
+    &(MenuItem){
+        .itemType = MENU_SUB,
+        .label = "Size",
+        .menu = &DAV_vector3MenuTemplate,
+        .onPush = SetVector3Items,
+    },
+    &(MenuItem){
+        .itemType = MENU_SUB,
+        .label = "Color",
+        .menu = &DAV_colorMenuTemplate,
+        .onDraw = OnDrawColorBox,
+        .onPush = SetColorItems,
+    },
+};
+
+Menu *DAV_cubeMenu = &(Menu){
+    .title = "Theme",
+    .current = 0,
+    .itemCount = sizeof(DAV_cubeItems) / sizeof(DAV_cubeItems[0]),
+    .items = DAV_cubeItems,
+};
 
 MenuItem *DAV_themeItems[] = {&(MenuItem){
                                   .itemType = MENU_CHOICE,
@@ -232,21 +336,24 @@ Menu *DAV_themeMenu = &(Menu){
     .items = DAV_themeItems,
 };
 
-void InitializeMenu(int colorID, Color *color) {
+// void InitializeCubeMenu(CubeShape *cube) { MenuItem **items = DAV_cubeItems;
+// }
+
+void InitializeThemeMenu(int colorID, Color *color) {
   MenuItem *item = DAV_themeItems[colorID];
   item->data = color;
 }
 
 void InitializeMenus() {
-  InitializeMenu(THEME_BACKGROUND_COLOR, &DAV_theme->backgroundColor);
-  InitializeMenu(THEME_PANEL_COLOR, &DAV_theme->panelColor);
-  InitializeMenu(THEME_TITLE_COLOR, &DAV_theme->titleColor);
-  InitializeMenu(THEME_LABEL_COLOR, &DAV_theme->labelColor);
-  InitializeMenu(THEME_VALUE_COLOR, &DAV_theme->valueColor);
-  InitializeMenu(THEME_LABEL_HOVER, &DAV_theme->labelHover);
-  InitializeMenu(THEME_VALUE_HOVER, &DAV_theme->valueHover);
-  InitializeMenu(THEME_LABEL_ACTIVE, &DAV_theme->labelActive);
-  InitializeMenu(THEME_VALUE_ACTIVE, &DAV_theme->valueActive);
-  InitializeMenu(THEME_COLOR_DIM, &DAV_theme->colorDim);
-  InitializeMenu(THEME_COLOR_HOVER, &DAV_theme->colorHover);
+  InitializeThemeMenu(THEME_BACKGROUND_COLOR, &DAV_theme->backgroundColor);
+  InitializeThemeMenu(THEME_PANEL_COLOR, &DAV_theme->panelColor);
+  InitializeThemeMenu(THEME_TITLE_COLOR, &DAV_theme->titleColor);
+  InitializeThemeMenu(THEME_LABEL_COLOR, &DAV_theme->labelColor);
+  InitializeThemeMenu(THEME_VALUE_COLOR, &DAV_theme->valueColor);
+  InitializeThemeMenu(THEME_LABEL_HOVER, &DAV_theme->labelHover);
+  InitializeThemeMenu(THEME_VALUE_HOVER, &DAV_theme->valueHover);
+  InitializeThemeMenu(THEME_LABEL_ACTIVE, &DAV_theme->labelActive);
+  InitializeThemeMenu(THEME_VALUE_ACTIVE, &DAV_theme->valueActive);
+  InitializeThemeMenu(THEME_COLOR_DIM, &DAV_theme->colorDim);
+  InitializeThemeMenu(THEME_COLOR_HOVER, &DAV_theme->colorHover);
 }
